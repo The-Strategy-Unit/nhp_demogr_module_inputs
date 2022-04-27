@@ -1,7 +1,29 @@
-.Rproj.user
+# history files
 .Rhistory
+.Rapp.history
+
+# session data files
 .RData
+.RDataTmp
+
+# user-specific files
 .Ruserdata
 
-# Folders
-/_raw_data/
+# output files from R CMD build
+/*.tar.gz
+
+# output files from R CMD check
+/*.Rcheck/
+
+# RStudio files
+.Rproj.user/
+
+# R environment variables
+.Renviron
+
+# renv library
+renv/library
+
+# folders
+_raw_data/
+data/
