@@ -1,4 +1,4 @@
-# 942_nhp_demogr_module_inputs
+# nhp_demogr_module_inputs
 
 This project holds the code used to compile demographic data required as inputs for the demographic module of the NHP model (project 942).
 
