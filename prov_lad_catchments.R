@@ -149,11 +149,17 @@ m <- leaflet() %>%
               fillColor = ~ pal(p_adj), fillOpacity = ~ na_op(p_adj),
               label = ~LAD21NM) %>% 
   addLegend("bottomright", title = "activity share", pal = pal, values = catch_dat$p_adj)
-
+ 
+# bug - mapshot fails to save leaflet map as PNG file (no problem creating HTML file)
+# workaround uses webshot2
 # https://github.com/r-spatial/mapview/issues/419
-# m = mapview(breweries)
-# mapshot(m, url = paste0(getwd(), "/map.html"))
-# mapshot(m, file = paste0(getwd(), "/map.png"))
+# mapshot(m, file = "test_map.png", debug = TRUE)
+
+library("webshot2")
+mapshot(m, url = "test_map.html", debug = TRUE)
+webshot2::webshot(url = "test_map.html", file = "test_map.png")
+
+
 
 
 # 5 save ----
