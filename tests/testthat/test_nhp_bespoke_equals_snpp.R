@@ -1,7 +1,7 @@
 
 context("nhp custom snpp")
 
-test_that("nhp custom snpp 90+ populations match snpp 90+ populations", {
+test_that("nhp bespoke snpp 90+ populations match snpp 90+ populations", {
   
   expect_equal(
     nhp_snpp_2018b$principal_proj |> 
@@ -13,6 +13,5 @@ test_that("nhp custom snpp 90+ populations match snpp 90+ populations", {
       group_by(year) |> 
       summarise(pop = sum(pop))
     )
-  
 })
 
