@@ -47,7 +47,7 @@ named_group_split <- function(.tbl, ...) {
 
 
 # 1 snpp 2018b ----
-proj_v <- "snpp_2018b"
+proj_v    <- "snpp_2018b"
 proj_vars <- list.files(here("_raw_data"), proj_v, full.names = TRUE)
 
 # clean df
@@ -67,26 +67,23 @@ clean_df <- function(df) {
 read_vars <- function(proj_vars) {
   
   out_list <- vector("list", length = length(proj_vars))
-  
-  for (i in seq_along(proj_vars)) {
-  
-  base <- "2018b"
-  id <- str_extract(proj_vars[i], "(?<=2018b_).*")
-  files <- list.files(proj_vars[i], "^(2018 SNPP).*(females|males).*(.csv$)", full.names = TRUE)
-  
-  l <- map(files, ~ read_csv(.x))
-  
-  dat <- bind_rows(l, .id = NULL) |> 
-    clean_df() |> 
-    mutate(base = base, id = id)
 
-  out_list[[i]] <- dat
-  names(out_list)[i] <- id
-  
+  for (i in seq_along(proj_vars)) {
+    base <- "2018b"
+    id <- str_extract(proj_vars[i], "(?<=2018b_).*")
+    files <- list.files(proj_vars[i], "^(2018 SNPP).*(females|males).*(.csv$)", full.names = TRUE)
+
+    l <- map(files, ~ read_csv(.x))
+
+    dat <- bind_rows(l, .id = NULL) |>
+      clean_df() |>
+      mutate(base = base, id = id)
+
+    out_list[[i]] <- dat
+    names(out_list)[i] <- id
   }
-  
+
   return(out_list)
-  
 }
 
 snpp_2018b_dat <- read_vars(proj_vars)
@@ -95,7 +92,7 @@ snpp_2018b_dat <- read_vars(proj_vars)
 
 
 # 2 npp 2018b ----
-proj_v <- "npp_2018b"
+proj_v    <- "npp_2018b"
 proj_vars <- list.files(here("_raw_data", proj_v), "(.xml)$", full.names = TRUE)
 
 proj_codes <- tribble(
@@ -139,15 +136,15 @@ read_vars <- function(proj_vars) {
   for (i in seq_along(proj_vars)) {
     
     base <- "2018b"
-    id <- str_extract(proj_vars[i], "(?<=npp_2018b/).*(?=_opendata)")
+    id   <- str_extract(proj_vars[i], "(?<=npp_2018b/).*(?=_opendata)")
     file <- proj_vars[i]
     
-    xml_doc <- read_xml(file)
-    xml_l <- as_list(xml_doc)
-    tbl <- xml_l$Workbook[[8]]$Table
+    xml_doc   <- read_xml(file)
+    xml_l     <- as_list(xml_doc)
+    tbl       <- xml_l$Workbook[[8]]$Table
     first_row <- xml_l$Workbook[[8]]$Table$Row
-    colnms <- unlist(first_row) |> unname()
-    dat <- as_tibble(t(matrix(unlist(tbl[-c(1, 4)]), ncol = 214)), .name_repair = ~ colnms)
+    colnms    <- unlist(first_row) |> unname()
+    dat       <- as_tibble(t(matrix(unlist(tbl[-c(1, 4)]), ncol = 214)), .name_repair = ~ colnms)
     
     dat <- dat |> 
       clean_df() |> 
@@ -155,11 +152,9 @@ read_vars <- function(proj_vars) {
     
     out_list[[i]] <- dat
     names(out_list)[i] <- id
-    
   }
   
   return(out_list)
-  
 }
 
 npp_2018b_dat <- read_vars(proj_vars)
@@ -174,7 +169,7 @@ npp_2018b_dat <- map(npp_2018b_dat, ~ .x |> left_join(proj_codes, by = c("id" = 
 read_lt20 <- function(wb, sheet) {
   
   base <- "2020b"
-  dat <- read_xlsx(here("_raw_data", wb), sheet = sheet, skip = 4)
+  dat  <- read_xlsx(here("_raw_data", wb), sheet = sheet, skip = 4)
   
   dat <- dat |> 
     mutate(base = base) |> 
@@ -192,7 +187,7 @@ ex_2020b_dat <- ex20m |>
 read_lt18 <- function(wb, sheet) {
   
   base <- "2018b"
-  dat <- read_xls(here("_raw_data", wb), sheet = sheet, skip = 9)
+  dat  <- read_xls(here("_raw_data", wb), sheet = sheet, skip = 9)
   
   dat <- dat |> 
     filter(!row_number() == 1L) |> 
@@ -213,8 +208,8 @@ ex_2018b_dat <- ex18m |>
 
 # 4 spread age 90+ ----
 # Which NPP variant should we take the 90+ distribution from?
-# Ideally, there exists a 1:1 mapping of SNPP variants to NPP variants.
-# If this is not the case we need to create one.
+# Ideally, there exists a 1:1 mapping of SNPP variants to NPP variants
+# If this is not the case we need to create one
 
 # 2018b SNPP
 # names(snpp_2018b_dat)
@@ -248,7 +243,6 @@ extract_90 <- function(x) {
     mutate(age = as.integer(age)) |> 
     select(-pop, -area, -base) |> 
     arrange(year, sex, age)
-    
   }
 
 dist_90 <- map(npp_2018b_dat, ~ extract_90(.x))
@@ -272,14 +266,13 @@ dist_90 <- dist_90[unique(var_map$npp_id)]
 spread_90 <- function(x) {
   
   x |> 
-  filter(age_group == "90 and over") |> 
-  left_join(var_map, by = c("id" = "snpp_id")) |> 
-  mutate(age = 90L)  %>% 
-  select(-age_group) |> 
-  group_by(area_code, area_name, sex, year) |> 
-  complete(age = 90:100) |> 
-  fill(base, id, npp_id)
-  
+    filter(age_group == "90 and over") |> 
+    left_join(var_map, by = c("id" = "snpp_id")) |> 
+    mutate(age = 90L)  %>% 
+    select(-age_group) |> 
+    group_by(area_code, area_name, sex, year) |> 
+    complete(age = 90:100) |> 
+    fill(base, id, npp_id)
 }
   
 new_90 <- map(snpp_2018b_dat, ~ spread_90(.x))
@@ -297,19 +290,21 @@ updated_90 <- list(bind_rows(new_90), bind_rows(dist_90)) %>%
   named_group_split(id)
 
 # extract snpp for 0-89 
-snpp_0to89 <- map(snpp_2018b_dat, ~ .x |> 
-                    filter(age_group != "90 and over") |> 
-                    mutate(age_group = as.integer(age_group)) |> 
-                    rename(age = age_group))
+snpp_0to89 <- map(
+  snpp_2018b_dat, ~ .x |> 
+    filter(age_group != "90 and over") |> 
+    mutate(age_group = as.integer(age_group)) |> 
+    rename(age = age_group))
 
 # append updated 90+ distribution
 nhp_snpp_2018b <- map2(snpp_0to89, updated_90, bind_rows)
 
 
 
+
 # 5 tests ----
 # check new 90+ total equals old 90+ total
-source(here("tests", "testthat", "test-nhp-custom-snpp.R"))
+source(here("tests", "testthat", "test_nhp_bespoke_equals_snpp.R"))
 
 
 
