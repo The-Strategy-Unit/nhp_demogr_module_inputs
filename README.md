@@ -18,6 +18,10 @@ Reads 2018-based and 2020-based past and projected period and cohort life tables
 
 High and low life expectancy variants (alongside the principal projection) were produced for the 2018-based release (no variant projections were produced for the 2020-based release). We implement a mapping of the expectation of life variants to the SNPP variants to ensure consistency between assumptions about future life expectancy and projected population changes.
 
+## Custom sub-national projection variants
+
+A set of 17 variant projections were published alongside the 2018-based NPPs. The 2018-based SNPPs include a much smaller set of 4 variant projections, limited to different assumptions about migration levels and trends. In order to provide a wider range of scenarios for use in the model, we created a custom set of 17 sub-national variant projections by applying growth rates by sex/age/year from the published NPP variants to the 2018 baseline for each LA from the SNPP.
+
 ## Trust catchments
 
 The module requires estimates of population change specific to individual hospital trusts. Local authority district (LAD) is the lowest geography that ONS projections are produced for so catchments are built on LAD. This is different from the input report where catchments are built using LSOAs (to mirror PHE methodology). However, the input report only requires catchments for historic and current time periods - not future time periods. Catchments are built using only inpatient activity - we assume that this activity is most broadly representative of the population served by a hospital.
