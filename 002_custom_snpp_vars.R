@@ -62,6 +62,8 @@ app_mx <- function(mx, snpp_principal) {
 # 1 read ----
 nhp_snpp_2018b <- readRDS(here("data","nhp_snpp_2018b.rds"))
 npp_2018b_dat  <- readRDS(here("data","npp_2018b_dat.rds"))
+# variant codes
+proj_codes     <- readRDS(here("data","proj_var_codes.rds"))
 
 
 
