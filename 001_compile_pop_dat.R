@@ -304,12 +304,14 @@ nhp_snpp_2018b <- map2(snpp_0to89, updated_90, bind_rows)
 
 # 5 tests ----
 # check new 90+ total equals old 90+ total
-source(here("tests", "testthat", "test_compile_pop_dat.R"))
+source(here("tests", "testthat", "test_001_compile_pop_dat.R"))
 
 
 
 
 # 6 save ----
+# projection variant codes
+saveRDS(proj_codes, here("data","proj_var_codes.rds"))
 # new
 saveRDS(nhp_snpp_2018b, here("data","nhp_snpp_2018b.rds"))
 # originals
