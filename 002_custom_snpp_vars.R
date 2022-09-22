@@ -37,6 +37,7 @@ pull_mx <- function(npp_proj_var_df) {
     arrange(sex, age, year) |>  # sort by year
     group_by(sex, age) |> # mx for sex/age groups
     mutate(mx = pop / lag(pop, n = 1L)) |> 
+    ungroup() |> 
     select(year, sex, age, mx)
 }
 
@@ -51,7 +52,7 @@ app_mx <- function(mx, snpp_principal) {
     group_by(area_code, area_name, sex, age) |> # mx for sex/age groups within areas
     mutate(new_pop = cumprod(mx)) |> 
     ungroup() |> 
-    select(-pop) |> 
+    select(-pop, -mx) |> 
     rename(pop = new_pop)
 }
 
@@ -68,14 +69,15 @@ npp_2018b_dat  <- readRDS(here("data","npp_2018b_dat.rds"))
 # 2 create custom variants ----
 # pull multipliers
 ls_mx <- map(npp_2018b_dat, pull_mx)
+ls_mx <- imap(ls_mx, ~ .x |> mutate(id = .y))
 # apply multipliers
-ls_snpp_custom_vars <- map(ls_mx, ~ app_mx(., nhp_snpp_2018b$principal_proj))
+ls_snpp_custom_vars <- map(ls_mx, ~ app_mx(., nhp_snpp_2018b$principal_proj |> select(-id)))
 
 
 
 
 # 3 tests ----
-source(here("tests", "testthat", "test_create_custom_snpp_vars.R"))
+source(here("tests", "testthat", "test_002_custom_snpp_vars.R"))
 
 
 
