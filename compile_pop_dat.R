@@ -250,7 +250,7 @@ dist_90 <- map(npp_2018b_dat, ~ extract_90(.x))
 # only keep npp variants that have been mapped to snpp variants
 dist_90 <- dist_90[unique(var_map$npp_id)]
 
-# How different is the distribution across variants?
+# how different is the distribution across variants?
 # dist_90_df <- map_df(dist_90, ~ bind_rows(.x))
 # 
 # ggplot(dist_90_df |> filter(sex == "males")) +
@@ -304,7 +304,7 @@ nhp_snpp_2018b <- map2(snpp_0to89, updated_90, bind_rows)
 
 # 5 tests ----
 # check new 90+ total equals old 90+ total
-source(here("tests", "testthat", "test_nhp_bespoke_equals_snpp.R"))
+source(here("tests", "testthat", "test_compile_pop_dat.R"))
 
 
 
