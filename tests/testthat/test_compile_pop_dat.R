@@ -1,8 +1,5 @@
 
-context("nhp custom snpp")
-
-test_that("nhp bespoke snpp 90+ populations match snpp 90+ populations", {
-  
+test_that("spread snpp 90+ populations match original snpp 90+ populations", {
   expect_equal(
     nhp_snpp_2018b$principal_proj |> 
       filter(age >= 90) |> 
