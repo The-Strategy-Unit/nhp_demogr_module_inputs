@@ -24,6 +24,7 @@ library("here")
 # 1 read files ----
 nhp_snpp_2018b       <- readRDS(here("data","nhp_snpp_2018b.rds"))
 nhp_snpp_2018b_cvars <- readRDS(here("data","nhp_snpp_2018b_custom_vars.rds"))
+proj_codes           <- readRDS(here("data","proj_var_codes.rds"))
 catchments           <- readRDS(here("data", "nhp_lad_catchments.rds"))
 cohort4              <- readRDS(here("data", "nhp_cohort4_trusts.rds"))
 cohort4_trusts_all   <- cohort4[["cohort4_trusts_all"]]
