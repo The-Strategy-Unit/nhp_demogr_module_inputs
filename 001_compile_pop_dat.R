@@ -176,12 +176,16 @@ read_lt20 <- function(wb, sheet) {
     pivot_longer(cols = `1981`:`2070`, names_to = "year", values_to = "ex")
 }
 
-ex20m <- read_lt20(wb = "engppp20ex.xlsx", sheet = "males cohort ex")
-ex20f <- read_lt20(wb = "engppp20ex.xlsx", sheet = "females cohort ex")
+ex20m_per <- read_lt20(wb = "engppp20ex.xlsx", sheet = "males period ex")
+ex20f_per <- read_lt20(wb = "engppp20ex.xlsx", sheet = "females period ex")
+ex20m_coh <- read_lt20(wb = "engppp20ex.xlsx", sheet = "males cohort ex")
+ex20f_coh <- read_lt20(wb = "engppp20ex.xlsx", sheet = "females cohort ex")
 
-ex_2020b_dat <- ex20m |> 
-  mutate(sex = "m") |> 
-  bind_rows(ex20f |> mutate(sex = "f"))
+ex_2020b_dat <- ex20m_per |> 
+  mutate(sex = "m", type = "period") |> 
+  bind_rows(ex20f_per |> mutate(sex = "f", type = "period")) |> 
+  bind_rows(ex20m_coh |> mutate(sex = "m", type = "cohort")) |> 
+  bind_rows(ex20f_coh |> mutate(sex = "f", type = "cohort"))
 
 # 2018b
 read_lt18 <- function(wb, sheet) {
@@ -196,12 +200,16 @@ read_lt18 <- function(wb, sheet) {
     pivot_longer(cols = `1981`:`2068`, names_to = "year", values_to = "ex")
 }
 
-ex18m <- read_lt18(wb = "engppp18ex.xls", sheet = "Males cohort ex")
-ex18f <- read_lt18(wb = "engppp18ex.xls", sheet = "Females cohort ex")
+ex18m_per <- read_lt18(wb = "engppp18ex.xls", sheet = "Males period ex")
+ex18f_per <- read_lt18(wb = "engppp18ex.xls", sheet = "Females period ex")
+ex18m_coh <- read_lt18(wb = "engppp18ex.xls", sheet = "Males cohort ex")
+ex18f_coh <- read_lt18(wb = "engppp18ex.xls", sheet = "Females cohort ex")
 
-ex_2018b_dat <- ex18m |> 
-  mutate(sex = "m") |> 
-  bind_rows(ex18f |> mutate(sex = "f"))
+ex_2018b_dat <- ex18m_per |> 
+  mutate(sex = "m", type = "period") |> 
+  bind_rows(ex18f_per |> mutate(sex = "f", type = "period")) |> 
+  bind_rows(ex18m_coh |> mutate(sex = "m", type = "cohort")) |> 
+  bind_rows(ex18f_coh |> mutate(sex = "f", type = "cohort"))
 
 
 
