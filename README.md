@@ -20,7 +20,7 @@ High and low life expectancy variants (alongside the principal projection) were 
 
 ## Custom sub-national projection variants
 
-A set of 17 variant projections were published alongside the 2018-based NPPs. The 2018-based SNPPs include a much smaller set of 4 variant projections, limited to different assumptions about migration levels and trends. In order to provide a wider range of scenarios for use in the model, we created a custom set of 17 sub-national variant projections by applying growth rates by sex/age/year from the published NPP variants to the 2018 baseline for each LA from the SNPP.
+A set of 17 variant projections were published alongside the 2018-based NPPs. The 2018-based SNPPs include a much smaller set of 4 variant projections, limited to different assumptions about migration levels and trends. In order to provide a wider range of scenarios for use in the model, we created a custom set of 17 sub-national variant projections by applying the percentage differences between NPP variants (by age/sex/year) and the NPP principal projection to the 2018 baseline for each LA from the SNPP.
 
 ## Trust catchments
 
