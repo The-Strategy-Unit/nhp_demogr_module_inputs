@@ -15,7 +15,8 @@
 # 1 read
 # 2 create custom variants
 # 3 tests
-# 4 save
+# 4 finalise output
+# 5 save
 
 
 # packages ----
@@ -45,7 +46,7 @@ var_diff_mx <- function(npp_ppp_df, npp_var_proj_df) {
 app_mx <- function(snpp_ppp_df, mx) {
   snpp_ppp_df |>
     left_join(mx, by = c("year", "sex", "age")) |>
-    mutate(new_pop = mx * pop) |>
+    mutate(new_pop = mx * pop, .before = pop) |>
     select(-pop, -mx) |>
     rename(pop = new_pop)
 }
@@ -79,7 +80,7 @@ npp_2018b_vars <- npp_2018b_dat |> list_modify("en_ppp" = NULL)
 
 # pull differences
 ls_mx <- map(npp_2018b_vars, ~ var_diff_mx(npp_ppp_df, .x))
-ls_mx <- imap(ls_mx, ~ .x |> mutate(id = .y))
+ls_mx <- imap(ls_mx, ~ .x |> mutate(id = str_replace(.y, "en_", "npp_")))
 
 # apply differences
 ls_snpp_custom_vars <- map(ls_mx, ~ app_mx(nhp_snpp_2018b$principal_proj |> select(-id), .))
@@ -171,17 +172,45 @@ cf_vars <- bind_rows(df_npp_area_test_yr, df_common_vars_test_yr) |>
   select(area_name, p_high:p_low)
 
 # plot differences
-# ggplot(data = cf_vars, aes(x = area_name, y = p_high, group = 1L)) +
+# ggplot(data = cf_vars, aes(x = reorder(area_name, p_high), y = p_high, group = 1L)) +
 #   geom_point(color = "#2c2d54") +
 #   geom_point(aes(x = area_name, y = p_low, group = 1L), color = "#87bcbd") +
 #   scale_x_discrete(name = NULL) +
 #   scale_y_continuous(name = NULL) +
-#   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, size = rel(.8)))
 
 source(here("tests", "testthat", "test_002_custom_snpp_vars.R"))
 
 
 
 
-# 4 save ----
+# 4 finalise outputs ----
+names(ls_snpp_custom_vars) <- str_replace(names(ls_snpp_custom_vars), "en_", "npp_")
+
+nms_lkup <- tribble(
+  ~oldnm, ~newnm,
+  "principal_proj", "snpp_ppp",
+  "var_proj_low_intl_migration", "snpp_ppl",
+  "var_proj_high_intl_migration", "snpp_pph",
+  "var_proj_10_year_migration", "snpp_10m",
+  "var_proj_alt_internal_migration", "snpp_aim"
+  )
+
+names(nhp_snpp_2018b) <- nms_lkup$newnm[match(names(nhp_snpp_2018b), nms_lkup$oldnm)]
+
+nhp_snpp_2018b <- imap(nhp_snpp_2018b, ~ .x |>
+       left_join(nms_lkup, by = c("id" = "oldnm")) |> 
+       select(-id) |> 
+       rename(id = newnm))
+
+# remove low/high migration variants from custom NPP set (these are in SNPP set)
+# ls_snpp_custom_vars$npp_ppl <- NULL
+# ls_snpp_custom_vars$npp_pph <- NULL
+
+ls_snpp_custom_vars <- c(nhp_snpp_2018b, ls_snpp_custom_vars)
+
+
+
+
+# 5 save ----
 saveRDS(ls_snpp_custom_vars, here("data", "nhp_snpp_2018b_custom_vars.rds"))
