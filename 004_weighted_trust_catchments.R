@@ -5,7 +5,7 @@
 
 # README ----
 # Use provider catchments and population data to create weighted catchment populations.
-# Weighted populations series are passed as input to NHP model.
+# Weighted catchment populations are passed as inputs to the model.
 
 
 # in this script ----
