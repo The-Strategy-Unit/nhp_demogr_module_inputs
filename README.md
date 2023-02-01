@@ -6,7 +6,9 @@ If you have any questions please contact [paulseamer\@nhs.net](mailto:paulseamer
 
 ## Population projections
 
-Reads 2018-based national population projections(NPP) and sub-national population projections (SNPP). <https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/nationalpopulationprojections/2018based> <https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/subnationalpopulationprojectionsforengland/2018based>
+Reads [2018-based national population projections(NPP)](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/nationalpopulationprojections/2018based) and [sub-national population projections (SNPP)](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/subnationalpopulationprojectionsforengland/2018based)
+
+
 
 ## Estimates of the very old (90+)
 
@@ -14,7 +16,7 @@ SNPP are cut at age 90+. NPP age groups are 0-104, 105-109 and 110+. We take the
 
 ## Expectation of life (life tables)
 
-Reads 2018-based and 2020-based past and projected period and cohort life tables. This information is used to parameterise the health-status adjustment. <https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/1981to2068> <https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/2020baseduk1981to2070>
+Reads [2018-based](https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/1981to2068) and [2020-based](https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/2020baseduk1981to2070) past and projected period and cohort life tables. This information is used to parameterise the health-status adjustment.
 
 High and low life expectancy variants (alongside the principal projection) were produced for the 2018-based release (no variant projections were produced for the 2020-based release). We implement a mapping of the expectation of life variants to the SNPP variants to ensure consistency between assumptions about future life expectancy and projected population changes.
 
