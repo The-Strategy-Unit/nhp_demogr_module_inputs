@@ -409,7 +409,7 @@ test_fit <- tibble(
   mutate(diff = hs_input_fx - fit_gamma)
 
 # test_fit
-# ergo for females + principal LE variant we could use rgamma(shape = 2.317666, rate = 2.862401)
+# ergo for females + principal LE variant we could use rgamma(shape = 2.317666, rate = 2.862401) + shift_const
 # to generate a distribution of model input values
 
 
