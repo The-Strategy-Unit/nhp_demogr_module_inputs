@@ -6,7 +6,7 @@
 # README ----
 # The demographic module requires information on 
 # (a) projected population change, and
-# (b) projected cohort expectations of life (for the health status adjustment)
+# (b) projected period/cohort expectation of life (for the health status adjustment)
 # Sub-national population projections SNPP are cut at age 90+. We use national
 # projections to estimate the age distribution for age 90-100+.
 # x17 variant projections are published as part of the 2018b NPP
@@ -25,11 +25,13 @@
 
 
 # packages ----
+{
 library("tidyverse")
 library("here")
 library("xml2")
 library("readxl")
 library("testthat")
+}
 
 # dplyr::group_split() returns a list of tibbles - functionality to return a named
 # list was considered anti-pattern - this is a work around to add names. 
@@ -205,11 +207,31 @@ ex18f_per <- read_lt18(wb = "engppp18ex.xls", sheet = "Females period ex")
 ex18m_coh <- read_lt18(wb = "engppp18ex.xls", sheet = "Males cohort ex")
 ex18f_coh <- read_lt18(wb = "engppp18ex.xls", sheet = "Females cohort ex")
 
+# low/high mortality variants
+ex18m_lle_per <- read_lt18(wb = "englle18ex.xls", sheet = "Males period ex")
+ex18f_lle_per <- read_lt18(wb = "englle18ex.xls", sheet = "Females period ex")
+ex18m_lle_coh <- read_lt18(wb = "englle18ex.xls", sheet = "Males cohort ex")
+ex18f_lle_coh <- read_lt18(wb = "englle18ex.xls", sheet = "Females cohort ex")
+
+ex18m_hle_per <- read_lt18(wb = "enghle18ex.xls", sheet = "Males period")  # helpfully used a different sheet name!
+ex18f_hle_per <- read_lt18(wb = "enghle18ex.xls", sheet = "Females period")
+ex18m_hle_coh <- read_lt18(wb = "enghle18ex.xls", sheet = "Males cohort")
+ex18f_hle_coh <- read_lt18(wb = "enghle18ex.xls", sheet = "Females cohort")
+
 ex_2018b_dat <- ex18m_per |> 
-  mutate(sex = "m", type = "period") |> 
-  bind_rows(ex18f_per |> mutate(sex = "f", type = "period")) |> 
-  bind_rows(ex18m_coh |> mutate(sex = "m", type = "cohort")) |> 
-  bind_rows(ex18f_coh |> mutate(sex = "f", type = "cohort"))
+  mutate(sex = "m", type = "period", var = "ple") |> 
+  bind_rows(ex18f_per |> mutate(sex = "f", type = "period", var = "ple")) |> 
+  bind_rows(ex18m_coh |> mutate(sex = "m", type = "cohort", var = "ple")) |> 
+  bind_rows(ex18f_coh |> mutate(sex = "f", type = "cohort", var = "ple")) |> 
+  # low/high variants
+  bind_rows(ex18m_lle_per |> mutate(sex = "m", type = "period", var = "lle")) |> 
+  bind_rows(ex18f_lle_per |> mutate(sex = "f", type = "period", var = "lle")) |> 
+  bind_rows(ex18m_lle_coh |> mutate(sex = "m", type = "cohort", var = "lle")) |> 
+  bind_rows(ex18f_lle_coh |> mutate(sex = "f", type = "cohort", var = "lle")) |> 
+  bind_rows(ex18m_hle_per |> mutate(sex = "m", type = "period", var = "hle")) |> 
+  bind_rows(ex18f_hle_per |> mutate(sex = "f", type = "period", var = "hle")) |> 
+  bind_rows(ex18m_hle_coh |> mutate(sex = "m", type = "cohort", var = "hle")) |> 
+  bind_rows(ex18f_hle_coh |> mutate(sex = "f", type = "cohort", var = "hle")) 
 
 
 
