@@ -27,3 +27,7 @@ renv/library
 # folders
 _raw_data/
 data/
+
+# .qmd build artifacts
+*_files/
+
