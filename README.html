@@ -354,70 +354,84 @@ display: none;
 
 <div id="nhp_demogr_module_inputs" class="section level1">
 <h1>nhp_demogr_module_inputs</h1>
-<p>This project holds the code used to compile demographic data required
-as inputs for the demographic module of the NHP model (project 942).</p>
-<p>If you have any questions please contact <a href="mailto:paulseamer@nhs.net">paulseamer@nhs.net</a></p>
-<div id="population-projections" class="section level2">
-<h2>Population projections</h2>
-<p>Reads 2018-based national population projections(NPP) and
-sub-national population projections (SNPP). <a href="https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/nationalpopulationprojections/2018based" class="uri">https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/nationalpopulationprojections/2018based</a>
-<a href="https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/subnationalpopulationprojectionsforengland/2018based" class="uri">https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/subnationalpopulationprojectionsforengland/2018based</a></p>
+<p>This repo holds the code for the demographic module of the NHP model
+(project 942).</p>
+<p>The module performs 3 main tasks:</p>
+<ol style="list-style-type: decimal">
+<li>sources and organises the demographic information required by the
+NHP model</li>
+<li>builds activity weighted population catchments for hospital
+trusts</li>
+<li>describes and implements a method for adjusting demand forecasts for
+future changes in population health status</li>
+</ol>
+<p>If you have any questions please contact <a href="mailto:paulseamer@nhs.net">paulseamer@nhs.net</a>.</p>
+<div id="required-inputs" class="section level2">
+<h2>Required inputs</h2>
+<p>The following datasets are used as inputs to this module:</p>
+<p><strong>Population projections</strong></p>
+<ul>
+<li><a href="https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/nationalpopulationprojections/2018based">2018-based
+national population projections (NPP)</a></li>
+<li><a href="https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/bulletins/subnationalpopulationprojectionsforengland/2018based">sub-national
+population projections (SNPP)</a></li>
+</ul>
+<p><strong>Life tables</strong></p>
+<ul>
+<li><a href="https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/1981to2068">2018-based
+life tables</a></li>
+<li><a href="https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/2020baseduk1981to2070">2020-based
+life tables</a></li>
+</ul>
 </div>
-<div id="estimates-of-the-very-old-90" class="section level2">
-<h2>Estimates of the very old (90+)</h2>
-<p>SNPP are cut at age 90+. NPP age groups are 0-104, 105-109 and 110+.
-We take the age distribution for ages 90-99 and 100+ from NPP and apply
-to SNPP to create sub-national estimates for ages 0-99 and 100+. There
-are more NPP variant projections (x17) than SNPP variants (x4). We
-implement a mapping of the two variant sets to ensure the most
-appropriate NPP distribution is used for each SNPP variant.</p>
+<div id="model-syoa-100-snpp-2018b.r" class="section level2">
+<h2>model-syoa-100-snpp-2018b.R</h2>
+<p>Sub-national population projections SNPP are cut at age 90+. National
+population projections NPP age groups are 0-104, 105-109 and 110+. In
+order to model activity by single year of age to age 100, we take the
+age distribution for ages 90-99 and 100+ from NPP and apply to SNPP to
+create sub-national estimates for ages 0-99 and 100+. There are more NPP
+variant projections (x17) than SNPP variants (x4). We implement a
+mapping of the two variant sets to ensure the most appropriate NPP
+distribution is used for each SNPP variant.</p>
 </div>
-<div id="expectation-of-life-life-tables" class="section level2">
-<h2>Expectation of life (life tables)</h2>
-<p>Reads 2018-based and 2020-based past and projected period and cohort
-life tables. This information is used to parameterise the health-status
-adjustment. <a href="https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/1981to2068" class="uri">https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/1981to2068</a>
-<a href="https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/2020baseduk1981to2070" class="uri">https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/2020baseduk1981to2070</a></p>
-<p>High and low life expectancy variants (alongside the principal
-projection) were produced for the 2018-based release (no variant
-projections were produced for the 2020-based release). We implement a
-mapping of the expectation of life variants to the SNPP variants to
-ensure consistency between assumptions about future life expectancy and
-projected population changes.</p>
+<div id="custom-variants-snpp-2018b.r" class="section level2">
+<h2>custom-variants-snpp-2018b.R</h2>
+<p>The 2018-based NPPs include a set of 17 variant projections. The
+2018-based SNPPs include a much smaller set of 4 variant projections,
+limited to different assumptions about migration levels and trends. In
+order to provide a wider range of scenarios for use in the model, we
+create a custom set of 17 sub-national variant projections by applying
+the percentage differences between NPP variants (by age/sex/year) and
+the NPP principal projection to the 2018 baseline for each local
+authority LA from the SNPP.</p>
 </div>
-<div id="custom-sub-national-projection-variants" class="section level2">
-<h2>Custom sub-national projection variants</h2>
-<p>A set of 17 variant projections were published alongside the
-2018-based NPPs. The 2018-based SNPPs include a much smaller set of 4
-variant projections, limited to different assumptions about migration
-levels and trends. In order to provide a wider range of scenarios for
-use in the model, we created a custom set of 17 sub-national variant
-projections by applying the percentage differences between NPP variants
-(by age/sex/year) and the NPP principal projection to the 2018 baseline
-for each LA from the SNPP.</p>
-</div>
-<div id="trust-catchments" class="section level2">
-<h2>Trust catchments</h2>
-<p>The module requires estimates of population change specific to
-individual hospital trusts. Local authority district (LAD) is the lowest
-geography that ONS projections are produced for so catchments are built
-on LAD. This is different from the input report where catchments are
-built using LSOAs (to mirror PHE methodology). However, the input report
-only requires catchments for historic and current time periods - not
-future time periods. Catchments are built using only inpatient activity
-- we assume that this activity is most broadly representative of the
-population served by a hospital.</p>
+<div id="weighted-trust-catchments.r" class="section level2">
+<h2>weighted-trust-catchments.R</h2>
+<p>The model requires estimates of population change specific to
+individual hospital trusts. Local authority district LAD is the lowest
+geography that Office for National Statistics ONS projections are
+produced for so catchments are built on LAD. This is different from the
+inputs app. where catchments are built using lower level super output
+areas LSOAs (to mirror <a href="https://app.powerbi.com/view?r=eyJrIjoiODZmNGQ0YzItZDAwZi00MzFiLWE4NzAtMzVmNTUwMThmMTVlIiwidCI6ImVlNGUxNDk5LTRhMzUtNGIyZS1hZDQ3LTVmM2NmOWRlODY2NiIsImMiOjh9">Office
+for Health Improvement &amp; Disparities OHID methodology</a>) However,
+the inputs app. only requires catchments for historic and current time
+periods – not future time periods. Catchments are built using only
+inpatient activity – we assume that this activity is most broadly
+representative of the population served by a hospital.</p>
 <p>To limit the number of LADs associated with a single trust (i.e. to
 avoid a long tail of LADs that contribute negligible activity) we only
 include LADs with a 5% or greater share of inpatient activity. We then
 redistribute the retained activity to ensure the shares across LADs sum
 to one.</p>
-</div>
-<div id="weighted-trust-catchments" class="section level2">
-<h2>Weighted trust catchments</h2>
 <p>A trust’s final catchment population comprises a weighted sum of its
 catchment LAD populations where LADs that contribute a greater share of
 the trust’s activity take a greater weight.</p>
+</div>
+<div id="model-pop-health-status.qmd" class="section level2">
+<h2>Model-pop-health-status.QMD</h2>
+<p>This notebook describes and implements a method for adjusting demand
+forecasts for future changes in population health status.</p>
 </div>
 </div>
 
