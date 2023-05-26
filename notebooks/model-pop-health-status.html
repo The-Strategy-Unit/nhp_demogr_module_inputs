@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.321">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Paul Seamer">
+
+<title>Modeling Changes in Population Health Status</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="model-pop-health-status_files/libs/clipboard/clipboard.min.js"></script>
+<script src="model-pop-health-status_files/libs/quarto-html/quarto.js"></script>
+<script src="model-pop-health-status_files/libs/quarto-html/popper.min.js"></script>
+<script src="model-pop-health-status_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="model-pop-health-status_files/libs/quarto-html/anchor.min.js"></script>
+<link href="model-pop-health-status_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="model-pop-health-status_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="model-pop-health-status_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="model-pop-health-status_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="model-pop-health-status_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+<script src="model-pop-health-status_files/libs/core-js-2.5.3/shim.min.js"></script>
+<script src="model-pop-health-status_files/libs/react-17.0.0/react.min.js"></script>
+<script src="model-pop-health-status_files/libs/react-17.0.0/react-dom.min.js"></script>
+<script src="model-pop-health-status_files/libs/reactwidget-1.0.0/react-tools.js"></script>
+<script src="model-pop-health-status_files/libs/htmlwidgets-1.6.2/htmlwidgets.js"></script>
+<link href="model-pop-health-status_files/libs/reactable-0.4.4/reactable.css" rel="stylesheet">
+<script src="model-pop-health-status_files/libs/reactable-binding-0.4.4/reactable.js"></script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<link rel="stylesheet" href="model-pop-health-status.css">
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#background" id="toc-background" class="nav-link active" data-scroll-target="#background"><span class="header-section-number">1</span> Background</a></li>
+  <li><a href="#theories-of-population-aging" id="toc-theories-of-population-aging" class="nav-link" data-scroll-target="#theories-of-population-aging"><span class="header-section-number">2</span> Theories of population aging</a></li>
+  <li><a href="#calibrating-an-adjustment-for-health-status" id="toc-calibrating-an-adjustment-for-health-status" class="nav-link" data-scroll-target="#calibrating-an-adjustment-for-health-status"><span class="header-section-number">3</span> Calibrating an adjustment for health status</a></li>
+  <li><a href="#the-workshop-distribution" id="toc-the-workshop-distribution" class="nav-link" data-scroll-target="#the-workshop-distribution"><span class="header-section-number">4</span> The workshop distribution</a></li>
+  <li><a href="#using-the-workshop-distribution" id="toc-using-the-workshop-distribution" class="nav-link" data-scroll-target="#using-the-workshop-distribution"><span class="header-section-number">5</span> Using the workshop distribution</a>
+  <ul class="collapse">
+  <li><a href="#derive-separate-distributions-for-men-and-women" id="toc-derive-separate-distributions-for-men-and-women" class="nav-link" data-scroll-target="#derive-separate-distributions-for-men-and-women"><span class="header-section-number">5.1</span> Derive separate distributions for men and women</a></li>
+  <li><a href="#sec-extrapolating" id="toc-sec-extrapolating" class="nav-link" data-scroll-target="#sec-extrapolating"><span class="header-section-number">5.2</span> Extrapolate the workshop distribution across time</a></li>
+  <li><a href="#conversion-to-model-input-values" id="toc-conversion-to-model-input-values" class="nav-link" data-scroll-target="#conversion-to-model-input-values"><span class="header-section-number">5.3</span> Conversion to model input values</a></li>
+  <li><a href="#approximating-the-distribution-of-model-input-values" id="toc-approximating-the-distribution-of-model-input-values" class="nav-link" data-scroll-target="#approximating-the-distribution-of-model-input-values"><span class="header-section-number">5.4</span> Approximating the distribution of model input values</a></li>
+  </ul></li>
+  <li><a href="#effect-of-life-table-variants" id="toc-effect-of-life-table-variants" class="nav-link" data-scroll-target="#effect-of-life-table-variants"><span class="header-section-number">6</span> Effect of life table variants</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Modeling Changes in Population Health Status</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading"></div>
+    <div class="quarto-title-meta-contents">
+             <p><a href="mailto:paulseamer@nhs.net">Paul Seamer</a> </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Mono&amp;family=Fira+Sans:wght@400;700&amp;family=Roboto:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
+<section id="background" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="background"><span class="header-section-number">1</span> Background</h2>
+<p>Demographic changes translate into need or demand for healthcare via two main channels.</p>
+<ol type="1">
+<li>First, need for healthcare increases with the size of the population, as the needs of a larger population are proportionately greater than those of a smaller population.</li>
+<li>Second, need increases with the proportion of older people in the population, because per capita utilisation tends to be higher for the old than the young.</li>
+</ol>
+<p>The concept that, on average, a larger or older population will have a greater need for healthcare is uncomplicated. However, in our experience little if any consideration is given to health status. Studies show that the demand for and use of health care depends ultimately on the health status and functional ability of citizens. While age is a useful indicator of health status (as shown by the steep upward slope of age-related expenditure profiles), it is not the causal factor.</p>
+<p>Methods that overlook or ignore health status implicitly assume that age-specific utilisation remains constant over time. This `overlooks the fact that rising life expectancy makes … older people “younger”, healthier, and fitter than their peers in earlier cohorts`, and risks overstating the effect of population aging on demand for health care.</p>
+</section>
+<section id="theories-of-population-aging" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="theories-of-population-aging"><span class="header-section-number">2</span> Theories of population aging</h2>
+<p>Good data on population health by age is limited and what evidence there is on secular trends in health status (prevalence of chronic conditions, disability, or self-assessed general health) presents a mixed picture. There is an unsettled debate about how population health status will evolve in relation to the growing life expectancy—will the additional years of life that recent cohorts have gained (and stand to gain) be spent in good health or disability and frailty? Alternative explanations for continued increases in life expectancy emphasise different causal factors and have different implications for morbidity in later life.</p>
+</section>
+<section id="calibrating-an-adjustment-for-health-status" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="calibrating-an-adjustment-for-health-status"><span class="header-section-number">3</span> Calibrating an adjustment for health status</h2>
+<p>An elicitation workshop on population health status took place in October 2022. The purpose of the workshop was to help the Strategy Unit SU and New Hospitals Programme NHP reach a view about how population health status will evolve over the coming decades. The specific quantity/parameter of interest QOI was:</p>
+<blockquote class="blockquote">
+<p>For a typical person of age 65 years in 2035, what proportion of their remaining life expectancy will be spent free of disability (i.e., without a limiting long-standing illness)?</p>
+</blockquote>
+<p>The primary output from the workshop was a probability distribution summarizing the views of a group of experts about the QOI. The distribution was for a fixed point in the future, 2035. The remainder of this document describes a process for using that probability distribution to calibrate an adjustment for population health status as part of a method for estimating the impact of population aging on future demand for health care.</p>
+</section>
+<section id="the-workshop-distribution" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="the-workshop-distribution"><span class="header-section-number">4</span> The workshop distribution</h2>
+<p>The workshop distribution is a <a href="https://en.wikipedia.org/wiki/Gamma_distribution">gamma</a> distribution defined in the range <span class="math inline">\(.44 &gt; x &lt; \infty\)</span> with a shape parameter <span class="math inline">\(\alpha = 2.36\)</span> and a rate parameter <span class="math inline">\(\beta = 50.6\)</span>. This is different from a truncated distribution. <a href="#fig-qoi-pdf">Figure&nbsp;1</a> shows a random sample of values generated from the workshop gamma distribution.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-qoi-pdf" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;1: QOI distribution from the workshop</figcaption><p></p>
+<p><img src="model-pop-health-status_files/figure-html/fig-qoi-pdf-1.png" class="img-fluid figure-img" width="529"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="using-the-workshop-distribution" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="using-the-workshop-distribution"><span class="header-section-number">5</span> Using the workshop distribution</h2>
+<p>The workshop was planned with the intention of eliciting separate distributions for females and males. However, this did not prove possible and instead a combined distribution for both sexes was produced. In order to leave open the option of modelling different assumptions about future health status for men and women we require a method for deriving sex-specific distributions. The workshop distribution was produced for a fixed point in the future, 2035. In order to use the distribution to model health status for different end points we need to develop a method for extrapolating the distribution across time.</p>
+<p>To use the workshop distribution as part of a modeling process we need to:</p>
+<ol type="1">
+<li>Derive separate distributions for men and women</li>
+<li>Extrapolate the distribution across time, to produce equivalent distributions for each year from 2018 to at least 2050</li>
+</ol>
+<section id="derive-separate-distributions-for-men-and-women" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="derive-separate-distributions-for-men-and-women"><span class="header-section-number">5.1</span> Derive separate distributions for men and women</h3>
+<p>We use current data on disability free life expectancy DFLE to derive sex-specific QOI distributions. We do this by applying a multiplicative constant (dependent on sex) to the workshop distribution. <a href="#fig-qoi-pdf-bysex">Figure&nbsp;2</a> shows the resulting shifted distributions</p>
+<p><span class="math display">\[
+\begin{align}
+QOI_{f|m}=QOI_{wshop}\times x_{f|m} \\
+\end{align}
+\]</span> where: <span id="eq-derive-sex"><span class="math display">\[
+\begin{align}
+x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)} \\
+\end{align}
+\tag{1}\]</span></span></p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-qoi-pdf-bysex" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;2: QOI workshop distribution by sex</figcaption><p></p>
+<p><img src="model-pop-health-status_files/figure-html/fig-qoi-pdf-bysex-1.png" class="img-fluid figure-img" width="529"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-extrapolating" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="sec-extrapolating"><span class="header-section-number">5.2</span> Extrapolate the workshop distribution across time</h3>
+<p>To complete the extrapolation task we must reason about the workshop participants’ assessment of factors affecting the future path of the QOI based on a central view and the risk surrounding it. To generate forecasting distributions at different times across the forecasting horizon we need to know three parameters.</p>
+<ol type="1">
+<li>a measure of central tendency or central view</li>
+<li>the degree of uncertainty</li>
+<li>the balance of risk</li>
+</ol>
+<p>The most obvious starting point is to assume a linear evolution from the QOIs current value to its most likely value in 2035 and beyond. However, a well-known side-effect of assuming persistent linear change is that your forecast will sooner or later arrive at an implausible value, in our case 0% or 100%. A common remedy for this problem is to replace a linear function with a logarithmic function (logarithmic growth curves increase quickly to start with, but the gains decrease as time goes on).</p>
+<p>Similarly, a reasonable starting assumption for the uncertainty parameter might be to assume it evolves in a linear fashion i.e., the uncertainty surrounding a ten year central estimate is double that for a five year horizon. Although over a long enough time frame the implied uncertainty would eventually exceed the bounds of the QOI (<span class="math inline">\(0\% &gt; QOI &lt; 100\%\)</span>).</p>
+<p>The workshop distribution is asymmetric (it is positively skewed with a longer right tail). The reason for this is that participants’ view on the balance of risk was on the upside—they felt there was a greater risk that the actual QOI would be in excess of their central forecast than it would be below. Our view is that in the absence of a clear rationale for changing the balance of risk we should assume this parameter remains constant.</p>
+<section id="the-split-normal-or-two-piece-normal-distribution" class="level4" data-number="5.2.1">
+<h4 data-number="5.2.1" class="anchored" data-anchor-id="the-split-normal-or-two-piece-normal-distribution"><span class="header-section-number">5.2.1</span> The split normal (or two-piece normal) distribution</h4>
+<p>The gamma distribution is defined by two parameters: a shape parameter <span class="math inline">\(\alpha = k\)</span> and a scale parameter <span class="math inline">\(\theta\)</span> or alternatively a shape parameter <span class="math inline">\(\alpha = k\)</span> and an inverse scale parameter <span class="math inline">\(\beta = 1/\theta\)</span>, called a rate parameter.</p>
+<p>Altering the rate parameter of a gamma distribution has the general effect of shrinking its range, but its mode (and other measures of central tendency) are also affected. This is different to a normal distribution where the standard deviation parameter can be altered without any effect on the mean. However, the normal distribution is symmetric, while the workshop distribution is skewed.</p>
+<p>The <a href="https://en.wikipedia.org/wiki/Split_normal_distribution">split normal</a> distribution is formed from joining at the mode the corresponding halves of two normal distributions with the same mode but different variance. The split normal distribution has proved useful for generating forecasting distributions. In particular, its use underpins the fan charts produced by the Bank of England (<a href="#fig-boe-fan">Figure&nbsp;3</a>).</p>
+<p>Intuitively, a split normal distribution should give a reasonable approximation of a gamma distribution. If we can find a split normal distribution that closely approximates the workshop gamma distribution then the extrapolation task becomes much more tractable.</p>
+<div id="fig-boe-fan" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;3: Bank of England fan chart</figcaption><p></p>
+<div class="quarto-figure quarto-figure-left">
+<figure class="figure">
+<p><a href="https://en.wikipedia.org/wiki/Fan_chart_(time_series)"><img src="mpc_cpi_fan_chart_feb_2023.jpg" class="img-fluid figure-img"></a></p>
+</figure>
+</div>
+</figure>
+</div>
+</section>
+<section id="sec-spnorm-approx-gamma" class="level4" data-number="5.2.2">
+<h4 data-number="5.2.2" class="anchored" data-anchor-id="sec-spnorm-approx-gamma"><span class="header-section-number">5.2.2</span> Finding a split normal distribution that approximates the workshop gamma distribution</h4>
+<p>There are several equivalent parametrizations for the split normal distribution. The two most popular both take into account three parameters, in the first <span class="math inline">\(-\infty &lt; \mu &gt; \infty\)</span> is the mode, and <span class="math inline">\(\sigma_1 &gt; 0\)</span> and <span class="math inline">\(\sigma_2 &gt; 0\)</span> are the left and right hand side standard deviations respectively. When <span class="math inline">\(\sigma_1 &gt; \sigma_2\)</span> the distribution is biased to the left i.e., negatively skewed, and when <span class="math inline">\(\sigma_2 &gt; \sigma_1\)</span>, the distribution is biased to the right i.e., positively skewed and if <span class="math inline">\(\sigma_1 = \sigma_2\)</span> the distribution is normal. An alternative parametrization uses, mode <span class="math inline">\(\mu\)</span>, uncertainty <span class="math inline">\(\sigma\)</span> and an inverse skewness indicator <span class="math inline">\(-1 &lt; \gamma &gt; 1\)</span>. If <span class="math inline">\(\gamma &gt; 0\)</span> the distribution is biased to the left, if <span class="math inline">\(\gamma &lt; 0\)</span>, the distribution is biased to the right and if <span class="math inline">\(\gamma = 0\)</span>, the distribution is normal.</p>
+<p>In a typical forecasting process, such as that followed by the Bank of England, the path of <span class="math inline">\(\mu\)</span> is estimated by a time series forecasting model, the uncertainty parameter <span class="math inline">\(\sigma\)</span> comes from the historical variability of the economic indicator that is being forecast (e.g., inflation) and the asymmetry parameter <span class="math inline">\(p = \frac{\sigma_1} {\sigma_1 + \sigma_2}\)</span> is somewhat judgemental depending upon the perception of the balance of risks in the future.</p>
+<p>Given that we wish to fix the skewness (balance of risk) the second parametrisation should be easier to work with. Therefore we need to find the values for mode, uncertainty and skew that define a split normal distribution that best fits (over the entire probability density function) the workshop gamma distribution. The following code uses the R <a href="https://astamm.github.io/nloptr/"><em>nloptr</em></a> package (an R interface to <a href="https://nlopt.readthedocs.io/en/latest/">NLopt</a> an open-source library for non-linear optimization) to find the values of the two control parameters (the mode of the gamma distribution can be obtained directly) that minimize the two-sample <a href="https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test">Kolmogorov–Smirnov</a> test statistic for a random sample from the workshop gamma distribution and the CDF for a split normal.</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># x argument to stats::ks.test() must be a vector of data values not an actual CDF</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># a large sample required here to approximate the true underlying distribution</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>gam_mod <span class="ot">&lt;-</span> (gam_lim <span class="sc">+</span> ((gam_shp <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> gam_rt))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">014796</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>gam <span class="ot">&lt;-</span> (gam_lim <span class="sc">+</span> <span class="fu">rgamma</span>(<span class="at">n =</span> <span class="fl">1e6</span>, <span class="at">shape =</span> gam_shp, <span class="at">rate =</span> gam_rt))</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># objective function</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>dist_search <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">unname</span>(<span class="fu">ks.test</span>(</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    gam,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"psplitnorm"</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">mode =</span> gam_mod, <span class="at">sd =</span> x[<span class="dv">1</span>], <span class="at">skew =</span> x[<span class="dv">2</span>]</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  )<span class="sc">$</span>statistic))</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># initial values for controls (SD &amp; skew)</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># by first solving and then plugging in the results as initial values it may be</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># possible to obtain a better solution, so-called 'polishing'</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>x0 <span class="ot">&lt;-</span> <span class="fu">c</span>(.<span class="dv">02</span>, <span class="fl">0.75</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># use this algorithm (incl. set seed)</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>opts <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="st">"algorithm"</span> <span class="ot">=</span> <span class="st">"NLOPT_LN_SBPLX"</span>, <span class="st">"xtol_rel"</span> <span class="ot">=</span> <span class="fl">1.0e-16</span>, <span class="st">"maxeval"</span> <span class="ot">=</span> <span class="fl">1e7</span>, <span class="st">"ranseed"</span> <span class="ot">=</span> <span class="dv">014796</span>)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co"># solve the objective function</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> nloptr<span class="sc">::</span><span class="fu">nloptr</span>(</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">x0 =</span> x0,</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># bounds for the controls</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># skewness must lie between -1 and 1</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">lb =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">ub =</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">1</span>),</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">eval_f =</span> dist_search,</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">eval_grad_f =</span> <span class="cn">NULL</span>,</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">opts =</span> opts</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="co"># check D statistic</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (res<span class="sc">$</span>objective <span class="sc">&gt;</span> .<span class="dv">025</span>) {</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    rlang<span class="sc">::</span><span class="fu">abort</span>(<span class="fu">c</span>(</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    <span class="st">"D statistic is too high"</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    ))</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the fit</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>dat_gam <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> gam)</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>sp_norm <span class="ot">&lt;-</span> <span class="fu">rsplitnorm</span>(<span class="at">n =</span> <span class="fl">1e5</span>, <span class="at">mode =</span> gam_mod, <span class="at">sd =</span> res<span class="sc">$</span>solution[<span class="dv">1</span>], <span class="at">skew =</span> res<span class="sc">$</span>solution[<span class="dv">2</span>])</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>dat_sp_norm <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> sp_norm)</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>cdf_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(.<span class="dv">4</span>, .<span class="dv">8</span>, .<span class="dv">001</span>)</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>cdf_gam <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> cdf_seq, <span class="at">y =</span> <span class="fu">ecdf</span>(gam)(cdf_seq))</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>cdf_sp_norm <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> cdf_seq, <span class="at">y =</span> <span class="fu">ecdf</span>(sp_norm)(cdf_seq))</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>fig_spnorm_pdf <span class="ot">&lt;-</span> <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="fu">aes</span>(<span class="at">x =</span> x), <span class="at">data =</span> dat_gam, <span class="at">color =</span> pal[<span class="dv">1</span>], <span class="at">linewidth =</span> .<span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="fu">aes</span>(<span class="at">x =</span> x), <span class="at">data =</span> dat_sp_norm, <span class="at">color =</span> pal[<span class="dv">11</span>], <span class="at">linewidth =</span> .<span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">name =</span> qoi_nm, <span class="at">limits =</span> <span class="fu">c</span>(.<span class="dv">4</span>, .<span class="dv">8</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(.<span class="dv">4</span>, .<span class="dv">8</span>, .<span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">name =</span> <span class="cn">NULL</span>, <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>))) <span class="sc">+</span></span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"&lt;span style = 'color: #e76254;'&gt;Workshop gamma&lt;/span&gt; v &lt;span style = 'color: #32608D;'&gt;split normal&lt;/span&gt; PDF"</span>) <span class="sc">+</span></span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.subtitle =</span> <span class="fu">element_markdown</span>())</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>fig_spnorm_cdf <span class="ot">&lt;-</span> <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y), <span class="at">data =</span> cdf_gam, <span class="at">color =</span> pal[<span class="dv">1</span>], <span class="at">linewidth =</span> .<span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y), <span class="at">data =</span> cdf_sp_norm, <span class="at">color =</span> pal[<span class="dv">11</span>], <span class="at">linewidth =</span> .<span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">name =</span> qoi_nm, <span class="at">limits =</span> <span class="fu">c</span>(.<span class="dv">4</span>, .<span class="dv">8</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(.<span class="dv">4</span>, .<span class="dv">8</span>, .<span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">name =</span> <span class="cn">NULL</span>, <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>))) <span class="sc">+</span></span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"&lt;span style = 'color: #e76254;'&gt;Workshop gamma&lt;/span&gt; v &lt;span style = 'color: #32608D;'&gt;split normal&lt;/span&gt; CDF"</span>) <span class="sc">+</span></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.subtitle =</span> <span class="fu">element_markdown</span>())</span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a><span class="co"># table of percentiles</span></span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">01</span>, .<span class="dv">05</span>, .<span class="dv">1</span>, .<span class="dv">25</span>, .<span class="dv">5</span>, .<span class="dv">75</span>, .<span class="dv">9</span>, .<span class="dv">95</span>, .<span class="dv">99</span>, <span class="dv">1</span>)</span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>spnorm_ptiles <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ptile"</span> <span class="ot">=</span> <span class="fu">paste0</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">25</span>, <span class="dv">50</span>, <span class="dv">75</span>, <span class="dv">90</span>, <span class="dv">95</span>, <span class="dv">99</span>, <span class="dv">100</span>), <span class="st">"%"</span>),</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>  <span class="st">"gamma"</span> <span class="ot">=</span> <span class="fu">quantile</span>(dat_sp_norm<span class="sc">$</span>x, <span class="at">probs =</span> probs),</span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>  <span class="st">"spnorm"</span> <span class="ot">=</span> <span class="fu">quantile</span>(dat_gam<span class="sc">$</span>x, <span class="at">probs =</span> probs)</span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>The resulting fit is close (<a href="#fig-spnorm-dfxs">Figure&nbsp;4</a>), especially for the middle section of the distribution and only starts to deviate at the extremes (beyond the 95th percentile). Both the gamma and the split normal have high kurtosis—they are heavy-tailed compared to the normal distribution and have a higher propensity to produce outliers. The gamma has a kurtosis of 5.551 and the split normal has a kurtosis of 3.326 (a kurtosis greater than 3 indicates positive excess kurtosis). Given that the original workshop gamma distribution can produce outliers with high values of the QOI that are far from the mode substituting it for a split normal distribution that is slightly more conservative in this regard does not seem like a significant drawback.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-spnorm-dfxs" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;4: Workshop gamma v. split normal comparison</figcaption><p></p>
+<p><img src="model-pop-health-status_files/figure-html/fig-spnorm-dfxs-1.png" class="img-fluid figure-img" width="755"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div id="fig-rtbl-spnorm-ptiles" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;5: Percentiles workshop gamma v. split normal</figcaption><p></p>
+
+<div class="rtbl-spnorm-ptiles">
+<div class="reactable html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-5a844d65d199c6ecde58" style="width:auto;height:auto;"></div>
+<span class="rtbl-src">
+<p></p>
+</span>
+<script type="application/json" data-for="htmlwidget-5a844d65d199c6ecde58">{"x":{"tag":{"name":"Reactable","attribs":{"data":{"ptile":["0%","1%","5%","10%","25%","50%","75%","90%","95%","99%","100%"],"gamma":[0.406282328122413,0.436895448402331,0.447775013122055,0.45375577552367,0.465103448405427,0.48188460953518,0.502415599658508,0.522803683085769,0.535157676067104,0.559909540684017,0.630875703328451],"spnorm":[0.440058423013332,0.444682955171635,0.450078618198439,0.454384094898661,0.464352702701462,0.48025817901295,0.50211554726914,0.527313716438253,0.545140422168131,0.584327166417229,0.784700307246356]},"columns":[{"id":"ptile","name":"Percentile","type":"character","className":"cell","headerClassName":"header","width":100,"align":"left","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"gamma","name":"Gamma","type":"numeric","className":"cell","headerClassName":"header","cell":["0.406","0.437","0.448","0.454","0.465","0.482","0.502","0.523","0.535","0.560","0.631"],"width":120,"align":"center","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"spnorm","name":"Split normal","type":"numeric","className":"cell","headerClassName":"header","cell":["0.440","0.445","0.450","0.454","0.464","0.480","0.502","0.527","0.545","0.584","0.785"],"width":120,"align":"center","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}}],"pagination":false,"dataKey":"581ea40f163785970eac0116155244c6"},"children":[]},"class":"reactR_markup"},"evals":[],"jsHooks":[]}</script>
+</div>
+</figure>
+</div>
+</div>
+</section>
+<section id="generating-distributions-for-other-years" class="level4" data-number="5.2.3">
+<h4 data-number="5.2.3" class="anchored" data-anchor-id="generating-distributions-for-other-years"><span class="header-section-number">5.2.3</span> Generating distributions for other years</h4>
+<p>The modal value of the workshop distribution is 0.467. The actual value of the QOI in 2018 is 0.526. As outlined in <a href="#sec-extrapolating">Section&nbsp;5.2</a> we generate forecast distributions for all years (to 2080) using first a linear slope for the mode and uncertainty, and second a logarithmic path before comparing the results. In both cases the balance of risk or skew parameter is fixed for the duration of the horizon. On balance we favour the use of a linear path, which has the added advantage of being simpler to explain.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-comp-paths" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;6: Linear v. logarithmic paths for central view and uncertainty</figcaption><p></p>
+<p><img src="model-pop-health-status_files/figure-html/fig-comp-paths-1.png" class="img-fluid figure-img" width="755"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-ridge" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;7: Linear v logarithmic forecast distributions to 2035</figcaption><p></p>
+<p><img src="model-pop-health-status_files/figure-html/fig-ridge-1.png" class="img-fluid figure-img" width="755"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-box" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;8: Linear v logarithmic forecast distributions to 2050</figcaption><p></p>
+<p><img src="model-pop-health-status_files/figure-html/fig-box-1.png" class="img-fluid figure-img" width="755"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div id="fig-rbl-ct-tend" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;9: Central tendency measures linear v. logarithmic</figcaption><p></p>
+
+<div class="rtbl-ct-tend">
+<div class="reactable html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-a6ea5d8965584ae573f2" style="width:auto;height:auto;"></div>
+<span class="rtbl-src">
+<p></p>
+</span>
+<script type="application/json" data-for="htmlwidget-a6ea5d8965584ae573f2">{"x":{"tag":{"name":"Reactable","attribs":{"data":{"year":[2018,2025,2030,2035,2040,2045,2050,2055,2060,2065,2070,2075,2080],"md_lin_dist":[0.525999999999999,0.501655428970006,0.484266449662868,0.466877470355731,0.449488491048593,0.432099511741455,0.414710532434317,0.397321553127179,0.379932573820041,0.362543594512903,0.345154615205765,0.327765635898627,0.310376656591489],"md_log_dist":[0.526,0.483465041008781,0.473533982779797,0.466877470355731,0.461863492568293,0.457839785178015,0.454478967665848,0.451593206142263,0.44906468372775,0.446814616354777,0.444787712786731,0.44294367286697,0.441252214524965],"mn_lin_dist":[0.525999999999999,0.509322054362892,0.497482094194646,0.485556429673391,0.473662577893159,0.461524661649405,0.44961488801865,0.43754592468514,0.42568418293777,0.414163572636532,0.402375890016523,0.389660344803748,0.37826259090751],"mn_log_dist":[0.526,0.496911777324944,0.490091240759242,0.485583711203718,0.482109012644703,0.479215463914913,0.477172562091832,0.474973237864384,0.473464506689078,0.471795123806003,0.470554373926307,0.469350174429249,0.468021332427969],"p50_lin_dist":[0.525999999999999,0.507833608567528,0.494955032263275,0.481983432405339,0.469122183370641,0.455892916327104,0.442916473448391,0.429726157591559,0.416733734259219,0.404169473454801,0.391346986482945,0.377577958610836,0.365261009558611],"p50_log_dist":[0.526,0.494347148614305,0.486884030499307,0.481929353298057,0.478209792333415,0.475055250847716,0.472867624917074,0.470485268752276,0.46881124249514,0.466963521209653,0.465577467426066,0.464240010774191,0.462812015579272]},"columns":[{"id":"year","name":"Year","type":"numeric","className":"cell","headerClassName":"header","width":80,"align":"left","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"md_lin_dist","name":"Linear","type":"numeric","className":"cell","headerClassName":"header","cell":["0.526","0.502","0.484","0.467","0.449","0.432","0.415","0.397","0.380","0.363","0.345","0.328","0.310"],"width":100,"align":"center","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"md_log_dist","name":"Log","type":"numeric","className":"cell","headerClassName":"header","cell":["0.526","0.483","0.474","0.467","0.462","0.458","0.454","0.452","0.449","0.447","0.445","0.443","0.441"],"width":100,"align":"center","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"mn_lin_dist","name":"Linear","type":"numeric","className":"cell","headerClassName":"header","cell":["0.526","0.509","0.497","0.486","0.474","0.462","0.450","0.438","0.426","0.414","0.402","0.390","0.378"],"width":100,"align":"center","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"mn_log_dist","name":"Log","type":"numeric","className":"cell","headerClassName":"header","cell":["0.526","0.497","0.490","0.486","0.482","0.479","0.477","0.475","0.473","0.472","0.471","0.469","0.468"],"width":100,"align":"center","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"p50_lin_dist","name":"Linear","type":"numeric","className":"cell","headerClassName":"header","cell":["0.526","0.508","0.495","0.482","0.469","0.456","0.443","0.430","0.417","0.404","0.391","0.378","0.365"],"width":100,"align":"center","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"p50_log_dist","name":"Log","type":"numeric","className":"cell","headerClassName":"header","cell":["0.526","0.494","0.487","0.482","0.478","0.475","0.473","0.470","0.469","0.467","0.466","0.464","0.463"],"width":100,"align":"center","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}}],"columnGroups":[{"headerClassName":"group-header","name":"Mode","columns":["md_lin_dist","md_log_dist"]},{"headerClassName":"group-header","name":"Mean","columns":["mn_lin_dist","mn_log_dist"]},{"headerClassName":"group-header","name":"50th Percentile","columns":["p50_lin_dist","p50_log_dist"]}],"pagination":false,"dataKey":"ca550f37ba059baa5fd9a3f0e3c0efcd"},"children":[]},"class":"reactR_markup"},"evals":[],"jsHooks":[]}</script>
+</div>
+</figure>
+</div>
+</div>
+</section>
+</section>
+<section id="conversion-to-model-input-values" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="conversion-to-model-input-values"><span class="header-section-number">5.3</span> Conversion to model input values</h3>
+<p>In our approach to modelling the impact of population aging on future demand for healthcare we conceive individuals to have a health status age distinct from their chronological age; it is their health status age that determines their level of healthcare use. An individual’s health status age is obtained by subtracting a percentage of their projected increase in life expectancy over the model horizon (taken from life table projections) from their chronological age. The workshop QOI is used alongside data on current disability free life expectancy DFLE and period life expectancy, and projections of period life expectancy to generate a distribution of percentages that are used to obtain an individuals health status age.</p>
+<blockquote class="blockquote">
+<p><strong>model input value</strong>: a percentage of the projected increase in life expectancy over the model horizon</p>
+</blockquote>
+<p><span id="eq-model-input"><span class="math display">\[
+\begin{align}
+Model\text{ }input\text{ }_{y,f|m}=\frac{QOI_{y,f|m}\times ex_{y,f|m} - dfle_{y=2018,f|m}}{ex_{y,f|m} - ex_{y=2018,f|m}}
+\end{align}
+\tag{2}\]</span></span></p>
+<p>For someone of chronological age <em>i</em>,</p>
+<p><span id="eq-age-adj"><span class="math display">\[
+\begin{align}
+Health\text{ }status\text{ }age_{y,f|m}=\text{ }&amp; chronological\text{ }age\text{ } - \\
+&amp; \{model\text{ }input\text{ }_{y,f|m}\times(ex_{i,y,f|m} - ex_{i,y=2018,f|m})\} \\
+\end{align}
+\tag{3}\]</span></span></p>
+</section>
+<section id="approximating-the-distribution-of-model-input-values" class="level3" data-number="5.4">
+<h3 data-number="5.4" class="anchored" data-anchor-id="approximating-the-distribution-of-model-input-values"><span class="header-section-number">5.4</span> Approximating the distribution of model input values</h3>
+<p>To short cut drawing values from the QOI distribution and pushing each value through <a href="#eq-model-input">Equation&nbsp;2</a> at model run time we follow a similar process described in <a href="#sec-spnorm-approx-gamma">Section&nbsp;5.2.2</a> to estimate the parameters of a split normal distribution that fits a sample of model input values generated by pushing values sampled from the QOI through <a href="#eq-model-input">Equation&nbsp;2</a>. This obviates the need to use <a href="#eq-model-input">Equation&nbsp;2</a> at model run time. Instead we sample model input values directly from a split normal distribution with fixed parameters. When sampling from the QOI distribution the sample size needs to be large enough to provide sufficient accuracy (note: a larger sample will slow the optimization procedure, but as this only needs to be run once this is not a significant issue). The output of this process is a list of completely specified split normal distributions for combinations of year, sex and life table variant that are sampled from to provide model input values at run time. <a href="#fig-rtbl-spnorm-params">Figure&nbsp;10</a> lists the parameters for females using the principal projection life table. Similar parameter sets are produced for combinations of life table variant and sex, in total 6 sets.</p>
+<div class="cell">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ex_chg_dat <span class="ot">&lt;-</span> ex_dat <span class="sc">|&gt;</span> </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">data =</span> <span class="fu">map</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    data, \(x) x <span class="sc">|&gt;</span> </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>      <span class="co"># qoi from workshop relates to a person of age 65 years</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(year <span class="sc">&gt;=</span> <span class="dv">2018</span>, age <span class="sc">==</span> <span class="dv">65</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">group_by</span>(sex) <span class="sc">|&gt;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>      <span class="co"># change from 2018</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">ex_chg =</span> ex <span class="sc">-</span> ex[<span class="dv">1</span>]) <span class="sc">|&gt;</span> </span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">ungroup</span>())</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(data) <span class="sc">|&gt;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># we divide by projected change later so need to prevent zeros occurring here</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># fixed to be a positive value for consistency (life expectancy is almost always increasing) </span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ex_chg =</span> <span class="fu">case_when</span>(year <span class="sc">!=</span> <span class="dv">2018</span> <span class="sc">&amp;</span> ex_chg <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="fu">abs</span>(<span class="fu">jitter</span>(ex_chg)), <span class="at">.default =</span> ex_chg))</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># fx to return draw of model input values for combinations of life expectancy variant,</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co"># sex, and year (3 x 2 x 25 = 150)</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>hs_input <span class="ot">&lt;-</span> <span class="cf">function</span>(</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">dist_pars =</span> extrap_dist,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">sex_mx =</span> mx_const,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">dfle =</span> base_dfle,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">ex =</span> ex_chg_dat,</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fl">1e5</span>,  <span class="co"># large sample provides greater accuracy but takes longer to estimate parameters</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">var =</span> <span class="fu">c</span>(<span class="st">"ppp"</span>, <span class="st">"lle"</span>, <span class="st">"hle"</span>),</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">sex =</span> <span class="fu">c</span>(<span class="st">"f"</span>, <span class="st">"m"</span>),</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">year =</span> 2019L) {</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># check arguments</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>  var <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(var)</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  sex <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(sex)</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  test_year <span class="ot">&lt;-</span> year <span class="sc">&lt;</span> 2019L <span class="sc">|</span> year <span class="sc">&gt;</span> 2043L</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">isTRUE</span>(test_year)){ </span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"arg 'year' should be an integer between 2019 and 2043; defaulting to 2019"</span>)</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  year <span class="ot">&lt;-</span> year <span class="sc">*</span> (<span class="sc">!</span>test_year) <span class="sc">+</span> 2019L <span class="sc">*</span> test_year</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  ex_endyr <span class="ot">&lt;-</span> ex_chg_dat <span class="sc">|&gt;</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(var <span class="sc">==</span> {{ var }}, sex <span class="sc">==</span> {{ sex }}, year <span class="sc">==</span> {{ year }}) <span class="sc">|&gt;</span> </span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>(ex)</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>  proj_chg <span class="ot">&lt;-</span> ex_chg_dat <span class="sc">|&gt;</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(var <span class="sc">==</span> {{ var }}, sex <span class="sc">==</span> {{ sex }}, year <span class="sc">==</span> {{ year }}) <span class="sc">|&gt;</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>(ex_chg)</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  dfle_start <span class="ot">&lt;-</span> base_dfle <span class="sc">|&gt;</span> <span class="fu">pull</span>(sex)</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  qoi_draw <span class="ot">&lt;-</span> extrap_dat <span class="sc">|&gt;</span> </span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>    <span class="co"># pull in multiplier for sex</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">sex =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"f"</span>, <span class="st">"m"</span>))) <span class="sc">|&gt;</span>  </span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    <span class="fu">unnest</span>(sex) <span class="sc">|&gt;</span> </span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(sex_mx, <span class="fu">join_by</span>(<span class="st">"sex"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(sex <span class="sc">==</span> {{ sex }}, year <span class="sc">==</span> {{ year }}) <span class="sc">|&gt;</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">qoi_draw =</span> <span class="fu">pmap</span>(</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>      <span class="co"># use linear extrapolation</span></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>      <span class="fu">list</span>(lin_mode, lin_sd, lin_skew),</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>      \(md, sd, sk) {</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>        <span class="fu">rsplitnorm</span>(<span class="at">n =</span> {{ n }}, <span class="at">mode =</span> md, <span class="at">sd =</span> sd, <span class="at">skew =</span> sk) <span class="sc">*</span> mx</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>      )) <span class="sc">|&gt;</span> </span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(qoi_draw) <span class="sc">|&gt;</span> </span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(qoi_draw) <span class="sc">|&gt;</span> </span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>()</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>  dfle_end <span class="ot">&lt;-</span> qoi_draw <span class="sc">*</span> ex_endyr</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>  dfle_chg <span class="ot">&lt;-</span> dfle_end <span class="sc">-</span> dfle_start</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(dfle_chg <span class="sc">/</span> proj_chg)</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="co"># fx to return mode of model input values</span></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="co"># estimated by plugging mode of QOI into equation 2</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>hs_input_mode <span class="ot">&lt;-</span> <span class="cf">function</span>(</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>    <span class="at">dist_pars =</span> extrap_dist,</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    <span class="at">sex_mx =</span> mx_const,</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>    <span class="at">dfle =</span> base_dfle,</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>    <span class="at">ex =</span> ex_chg_dat,</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>    <span class="at">var =</span> <span class="fu">c</span>(<span class="st">"ppp"</span>, <span class="st">"lle"</span>, <span class="st">"hle"</span>),</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>    <span class="at">sex =</span> <span class="fu">c</span>(<span class="st">"f"</span>, <span class="st">"m"</span>),</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>    <span class="at">year =</span> 2019L) {</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>  <span class="co"># check arguments</span></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>  var <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(var)</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>  sex <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(sex)</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>  test_year <span class="ot">&lt;-</span> year <span class="sc">&lt;</span> 2019L <span class="sc">|</span> year <span class="sc">&gt;</span> 2043L</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">isTRUE</span>(test_year)){ </span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"arg 'year' should be an integer between 2019 and 2043; defaulting to 2019"</span>)</span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>  year <span class="ot">&lt;-</span> year <span class="sc">*</span> (<span class="sc">!</span>test_year) <span class="sc">+</span> 2019L <span class="sc">*</span> test_year</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>  ex_endyr <span class="ot">&lt;-</span> ex_chg_dat <span class="sc">|&gt;</span></span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(var <span class="sc">==</span> {{ var }}, sex <span class="sc">==</span> {{ sex }}, year <span class="sc">==</span> {{ year }}) <span class="sc">|&gt;</span> </span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>(ex)</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>  proj_chg <span class="ot">&lt;-</span> ex_chg_dat <span class="sc">|&gt;</span></span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(var <span class="sc">==</span> {{ var }}, sex <span class="sc">==</span> {{ sex }}, year <span class="sc">==</span> {{ year }}) <span class="sc">|&gt;</span></span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>(ex_chg)</span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>  dfle_start <span class="ot">&lt;-</span> base_dfle <span class="sc">|&gt;</span> <span class="fu">pull</span>(sex)</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>  qoi_mode <span class="ot">&lt;-</span> extrap_dat <span class="sc">|&gt;</span></span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>    <span class="co"># pull in multiplier for sex</span></span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">sex =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"f"</span>, <span class="st">"m"</span>))) <span class="sc">|&gt;</span>  </span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>    <span class="fu">unnest</span>(sex) <span class="sc">|&gt;</span> </span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(sex_mx, <span class="fu">join_by</span>(<span class="st">"sex"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(sex <span class="sc">==</span> {{ sex }}, year <span class="sc">==</span> {{ year }}) <span class="sc">|&gt;</span></span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">qoi_mode =</span> lin_mode <span class="sc">*</span> mx) <span class="sc">|&gt;</span> </span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(qoi_mode) <span class="sc">|&gt;</span> </span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pull</span>()</span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a>  dfle_end <span class="ot">&lt;-</span> qoi_mode <span class="sc">*</span> ex_endyr</span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a>  dfle_chg <span class="ot">&lt;-</span> dfle_end <span class="sc">-</span> dfle_start</span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(dfle_chg <span class="sc">/</span> proj_chg)</span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a><span class="co"># for these combinations of expectancy variant, sex and year</span></span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>args_df <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">expand_grid</span>(</span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>  <span class="at">var =</span> <span class="fu">c</span>(<span class="st">"ppp"</span>, <span class="st">"lle"</span>, <span class="st">"hle"</span>),</span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a>  <span class="at">sex =</span> <span class="fu">c</span>(<span class="st">"f"</span>, <span class="st">"m"</span>),</span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a>  <span class="at">year =</span> <span class="dv">2019</span><span class="sc">:</span><span class="dv">2043</span></span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a><span class="co"># generate list of draws</span></span>
+<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>mod_input_draws <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">mode =</span> <span class="st">"list"</span>, <span class="at">length =</span> <span class="fu">nrow</span>(args_df))</span>
+<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(args_df)) {</span>
+<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>  mod_input_draws[[i]] <span class="ot">&lt;-</span> <span class="fu">hs_input</span>(</span>
+<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a>    <span class="at">var =</span> args_df<span class="sc">$</span>var[[i]],</span>
+<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a>    <span class="at">sex =</span> args_df<span class="sc">$</span>sex[[i]],</span>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a>    <span class="at">year =</span> args_df<span class="sc">$</span>year[[i]]</span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a><span class="co"># generate list of modes</span></span>
+<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>mod_input_modes <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">mode =</span> <span class="st">"list"</span>, <span class="at">length =</span> <span class="fu">nrow</span>(args_df))</span>
+<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(args_df)) {</span>
+<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a>  mod_input_modes[[i]] <span class="ot">&lt;-</span> <span class="fu">hs_input_mode</span>(</span>
+<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a>    <span class="at">var =</span> args_df<span class="sc">$</span>var[[i]],</span>
+<span id="cb2-147"><a href="#cb2-147" aria-hidden="true" tabindex="-1"></a>    <span class="at">sex =</span> args_df<span class="sc">$</span>sex[[i]],</span>
+<span id="cb2-148"><a href="#cb2-148" aria-hidden="true" tabindex="-1"></a>    <span class="at">year =</span> args_df<span class="sc">$</span>year[[i]]</span>
+<span id="cb2-149"><a href="#cb2-149" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-150"><a href="#cb2-150" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-151"><a href="#cb2-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-152"><a href="#cb2-152" aria-hidden="true" tabindex="-1"></a><span class="co"># start a timer</span></span>
+<span id="cb2-153"><a href="#cb2-153" aria-hidden="true" tabindex="-1"></a><span class="fu">tic</span>(<span class="st">"solve for spnorm parameters"</span>)</span>
+<span id="cb2-154"><a href="#cb2-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-155"><a href="#cb2-155" aria-hidden="true" tabindex="-1"></a><span class="co"># solve for split normal parameters that fit model input distribution</span></span>
+<span id="cb2-156"><a href="#cb2-156" aria-hidden="true" tabindex="-1"></a><span class="co"># inputs 1) sample of values 2) population mode</span></span>
+<span id="cb2-157"><a href="#cb2-157" aria-hidden="true" tabindex="-1"></a>sol_list <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">mode =</span> <span class="st">"list"</span>, <span class="at">length =</span> <span class="fu">length</span>(mod_input_draws))</span>
+<span id="cb2-158"><a href="#cb2-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-159"><a href="#cb2-159" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(mod_input_draws)) {</span>
+<span id="cb2-160"><a href="#cb2-160" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-161"><a href="#cb2-161" aria-hidden="true" tabindex="-1"></a>  x0 <span class="ot">&lt;-</span> <span class="fu">c</span>(.<span class="dv">4</span>, .<span class="dv">5</span>)</span>
+<span id="cb2-162"><a href="#cb2-162" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-163"><a href="#cb2-163" aria-hidden="true" tabindex="-1"></a>  <span class="co"># use this algorithm (incl. set seed)</span></span>
+<span id="cb2-164"><a href="#cb2-164" aria-hidden="true" tabindex="-1"></a>  opts <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="st">"algorithm"</span> <span class="ot">=</span> <span class="st">"NLOPT_LN_SBPLX"</span>, <span class="st">"xtol_rel"</span> <span class="ot">=</span> <span class="fl">1.0e-16</span>, <span class="st">"maxeval"</span> <span class="ot">=</span> <span class="fl">1e7</span>, <span class="st">"ranseed"</span> <span class="ot">=</span> <span class="dv">014796</span>)</span>
+<span id="cb2-165"><a href="#cb2-165" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-166"><a href="#cb2-166" aria-hidden="true" tabindex="-1"></a>  <span class="co"># objective function</span></span>
+<span id="cb2-167"><a href="#cb2-167" aria-hidden="true" tabindex="-1"></a>  dist_search <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb2-168"><a href="#cb2-168" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">unname</span>(<span class="fu">ks.test</span>(</span>
+<span id="cb2-169"><a href="#cb2-169" aria-hidden="true" tabindex="-1"></a>      mod_input_draws[[i]],</span>
+<span id="cb2-170"><a href="#cb2-170" aria-hidden="true" tabindex="-1"></a>      <span class="st">"psplitnorm"</span>,</span>
+<span id="cb2-171"><a href="#cb2-171" aria-hidden="true" tabindex="-1"></a>      <span class="at">mode =</span> mod_input_modes[[i]], <span class="at">sd =</span> x[<span class="dv">1</span>], <span class="at">skew =</span> x[<span class="dv">2</span>]</span>
+<span id="cb2-172"><a href="#cb2-172" aria-hidden="true" tabindex="-1"></a>    )<span class="sc">$</span>statistic))</span>
+<span id="cb2-173"><a href="#cb2-173" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-174"><a href="#cb2-174" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-175"><a href="#cb2-175" aria-hidden="true" tabindex="-1"></a>  sol_list[[i]] <span class="ot">&lt;-</span> nloptr<span class="sc">::</span><span class="fu">nloptr</span>(</span>
+<span id="cb2-176"><a href="#cb2-176" aria-hidden="true" tabindex="-1"></a>    <span class="at">x0 =</span> x0,</span>
+<span id="cb2-177"><a href="#cb2-177" aria-hidden="true" tabindex="-1"></a>    <span class="co"># bounds for the controls</span></span>
+<span id="cb2-178"><a href="#cb2-178" aria-hidden="true" tabindex="-1"></a>    <span class="co"># skewness must lie between -1 and 1</span></span>
+<span id="cb2-179"><a href="#cb2-179" aria-hidden="true" tabindex="-1"></a>    <span class="at">lb =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb2-180"><a href="#cb2-180" aria-hidden="true" tabindex="-1"></a>    <span class="at">ub =</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">1</span>),</span>
+<span id="cb2-181"><a href="#cb2-181" aria-hidden="true" tabindex="-1"></a>    <span class="at">eval_f =</span> dist_search,</span>
+<span id="cb2-182"><a href="#cb2-182" aria-hidden="true" tabindex="-1"></a>    <span class="at">eval_grad_f =</span> <span class="cn">NULL</span>,</span>
+<span id="cb2-183"><a href="#cb2-183" aria-hidden="true" tabindex="-1"></a>    <span class="at">opts =</span> opts</span>
+<span id="cb2-184"><a href="#cb2-184" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-185"><a href="#cb2-185" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-186"><a href="#cb2-186" aria-hidden="true" tabindex="-1"></a>  <span class="co"># check D statistic</span></span>
+<span id="cb2-187"><a href="#cb2-187" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (sol_list[[i]]<span class="sc">$</span>objective <span class="sc">&gt;=</span> .<span class="dv">005</span>) {</span>
+<span id="cb2-188"><a href="#cb2-188" aria-hidden="true" tabindex="-1"></a>    rlang<span class="sc">::</span><span class="fu">abort</span>(<span class="fu">c</span>(</span>
+<span id="cb2-189"><a href="#cb2-189" aria-hidden="true" tabindex="-1"></a>    <span class="st">"D statistic is too high"</span></span>
+<span id="cb2-190"><a href="#cb2-190" aria-hidden="true" tabindex="-1"></a>    ))</span>
+<span id="cb2-191"><a href="#cb2-191" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-192"><a href="#cb2-192" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-193"><a href="#cb2-193" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-194"><a href="#cb2-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-195"><a href="#cb2-195" aria-hidden="true" tabindex="-1"></a><span class="co"># stop the timer</span></span>
+<span id="cb2-196"><a href="#cb2-196" aria-hidden="true" tabindex="-1"></a><span class="fu">toc</span>(<span class="at">log =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-197"><a href="#cb2-197" aria-hidden="true" tabindex="-1"></a><span class="fu">tic.log</span>(<span class="at">format =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-198"><a href="#cb2-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-199"><a href="#cb2-199" aria-hidden="true" tabindex="-1"></a>spnorm_params <span class="ot">&lt;-</span> args_df <span class="sc">|&gt;</span> </span>
+<span id="cb2-200"><a href="#cb2-200" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb2-201"><a href="#cb2-201" aria-hidden="true" tabindex="-1"></a>    <span class="at">ks_test_d =</span> <span class="fu">map_dbl</span>(sol_list, \(x) x<span class="sc">$</span>objective),</span>
+<span id="cb2-202"><a href="#cb2-202" aria-hidden="true" tabindex="-1"></a>    <span class="at">mode =</span> <span class="fu">map_dbl</span>(mod_input_modes, \(x) x),</span>
+<span id="cb2-203"><a href="#cb2-203" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd =</span> <span class="fu">map_dbl</span>(sol_list, \(x) x<span class="sc">$</span>solution[<span class="dv">1</span>]),</span>
+<span id="cb2-204"><a href="#cb2-204" aria-hidden="true" tabindex="-1"></a>    <span class="at">skew =</span> <span class="fu">map_dbl</span>(sol_list, \(x) x<span class="sc">$</span>solution[<span class="dv">2</span>])</span>
+<span id="cb2-205"><a href="#cb2-205" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-206"><a href="#cb2-206" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-207"><a href="#cb2-207" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(spnorm_params, <span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"split_normal_parameters.rds"</span>))</span>
+<span id="cb2-208"><a href="#cb2-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-209"><a href="#cb2-209" aria-hidden="true" tabindex="-1"></a>spnorm_params_fortbl <span class="ot">&lt;-</span> spnorm_params <span class="sc">|&gt;</span> <span class="fu">filter</span>(var <span class="sc">==</span> <span class="st">"ppp"</span>, sex <span class="sc">==</span> <span class="st">"f"</span>) <span class="sc">|&gt;</span> <span class="fu">select</span>(<span class="sc">-</span>var, <span class="sc">-</span>sex, <span class="sc">-</span>ks_test_d)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<div id="fig-rtbl-spnorm-params" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;10: Parameters for split normal distribution used to sample model input values</figcaption><p></p>
+
+<div class="rtbl-spnorm-params">
+<div class="reactable html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-bcde82eaebbec1d6ab13" style="width:auto;height:auto;"></div>
+<span class="rtbl-src">
+<p></p>
+</span>
+<script type="application/json" data-for="htmlwidget-bcde82eaebbec1d6ab13">{"x":{"tag":{"name":"Reactable","attribs":{"data":{"year":[2019,2020,2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2031,2032,2033,2034,2035,2036,2037,2038,2039,2040,2041,2042,2043],"mode":[2.27079894723871,2.8113199791737,1.80262033950486,1.56853103563794,1.1202537699856,0.943870201490519,0.708220738370414,0.550032308830493,0.431354475707262,0.333916846890836,0.231726366730989,0.170197069246325,0.12161509067391,0.041407747798598,0.00958299051433364,-0.0170493313327052,-0.0397873266018278,-0.100759424353213,-0.116062881072256,-0.129646752885657,-0.141854956774543,-0.191285907451559,-0.199491094383184,-0.207115243132212,-0.214255193395739],"sd":[0.076011902794305,0.223609701960888,0.225623807140761,0.299016429803931,0.284285725333189,0.34085034723351,0.315927589303775,0.304441449434264,0.343128838450611,0.323737622296054,0.358524136386227,0.346787658272015,0.333211687602097,0.361322829861797,0.348922588113215,0.339308971941458,0.330355629900879,0.355156173291726,0.342103949917357,0.335252512048059,0.332505067339693,0.348029536281238,0.344123760846942,0.337065116841638,0.332678679427748],"skew":[0.742140504961998,0.748717943104708,0.744957777051718,0.749810349038057,0.744215729743132,0.745019754997557,0.746890500577507,0.745609279244439,0.748074770933603,0.753243763186949,0.747809037505691,0.744272020050357,0.748278070647189,0.745146019348823,0.746003990119853,0.749196321700879,0.75088454057601,0.741651452603964,0.74973096402076,0.749817331444341,0.74688439491399,0.749045638007049,0.747057937014469,0.749503884713842,0.750195653616935]},"columns":[{"id":"year","name":"Year","type":"numeric","className":"cell","headerClassName":"header","width":80,"align":"left","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"mode","name":"Mode","type":"numeric","className":"cell","headerClassName":"header","cell":["2.271","2.811","1.803","1.569","1.120","0.944","0.708","0.550","0.431","0.334","0.232","0.170","0.122","0.041","0.010","-0.017","-0.040","-0.101","-0.116","-0.130","-0.142","-0.191","-0.199","-0.207","-0.214"],"width":100,"align":"right","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"sd","name":"SD","type":"numeric","className":"cell","headerClassName":"header","cell":["0.076","0.224","0.226","0.299","0.284","0.341","0.316","0.304","0.343","0.324","0.359","0.347","0.333","0.361","0.349","0.339","0.330","0.355","0.342","0.335","0.333","0.348","0.344","0.337","0.333"],"width":100,"align":"right","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}},{"id":"skew","name":"Skew","type":"numeric","className":"cell","headerClassName":"header","cell":["0.742","0.749","0.745","0.750","0.744","0.745","0.747","0.746","0.748","0.753","0.748","0.744","0.748","0.745","0.746","0.749","0.751","0.742","0.750","0.750","0.747","0.749","0.747","0.750","0.750"],"width":100,"align":"right","style":{"fontFamily":"Fira Mono, sans serif","whiteSpace":"pre"}}],"pagination":false,"dataKey":"f2e69965be9e3836713af36fa1f6988e"},"children":[]},"class":"reactR_markup"},"evals":[],"jsHooks":[]}</script>
+</div>
+</figure>
+</div>
+</div>
+</section>
+</section>
+<section id="effect-of-life-table-variants" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="effect-of-life-table-variants"><span class="header-section-number">6</span> Effect of life table variants</h2>
+<p>The future development of life expectancy is uncertain. To reflect this uncertainty the Office for National Statistics ONS publish variant life tables that reflect different assumptions (high and low variants are produced). The model input values (<a href="#eq-model-input">Equation&nbsp;2</a>) depend on expected changes in life expectancy. <a href="#fig-ex-trends">Figure&nbsp;11</a> shows projected trends in expectancy for the high and low variants alongside the principal projection. <a href="#fig-levar-effect">Figure&nbsp;12</a> shows the effect of life table variants on the implied health status age for persons of age 65 years old in 2035. Life table variants are mapped to ONS population projections such that user selection of a population projection variant determines the life table variant used.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-ex-trends" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;11: Projected trends in period life expectancy by life table variant</figcaption><p></p>
+<p><img src="model-pop-health-status_files/figure-html/fig-ex-trends-1.png" class="img-fluid figure-img" width="755"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-levar-effect" class="quarto-figure quarto-figure-left anchored">
+<figure class="figure">
+<p></p><figcaption class="figure-caption">Figure&nbsp;12: Effect of life table variants on health status age for persons aged 65 years in 2035</figcaption><p></p>
+<p><img src="model-pop-health-status_files/figure-html/fig-levar-effect-1.png" class="img-fluid figure-img" width="755"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

@@ -1,0 +1,121 @@
+
+#title-block-header.quarto-title-block.default
+.quarto-title-meta-contents a { /* YAML author */
+    font-size: 16px;
+    color: #4880A4;
+}
+
+body { /* body text */
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #2c2825;
+}
+
+/* table formatting */
+.reactable.html-widget {
+  margin-bottom: 12px;
+}
+
+.Reactable,
+.ReactTable,
+.rt-table {
+  background-color: #FFFFFF;
+}
+
+.rtbl-spnorm-ptiles,
+.rtbl-ct-tend,
+.rtbl-spnorm-params {
+  margin: 0;
+  font-family: "Fira Sans", sans-serif;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.rtbl-spnorm-ptiles {
+  width: 340px;
+}
+
+.rtbl-ct-tend {
+  width: 680px;
+}
+
+.rtbl-spnorm-params {
+  width: 380px;
+}
+
+
+div.rtbl-title {
+  width: 680px;
+}
+
+.rtbl-title {
+  font-family: "Fira Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c2825;
+  text-align: left;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+.rtbl-src {
+  font-size: 12px;
+  color: #686F73;
+}
+
+.rt-th {
+  border-bottom: none;
+}
+
+.rt-thead {
+  border-bottom: 1px solid #5a6570;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.rt-th-inner {
+  padding: 6px 4px;
+}
+
+.rt-th-group:after {
+    background-color: #5a6570;
+    bottom: 0;
+    content: "";
+    height: .5px;
+    left: 8px;
+    margin: auto;
+    position: absolute;
+    right: 8px;
+    width: 100%;
+}
+
+.rt-tr-group-header {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.rt-tbody {
+  font-family: "Fira Mono", monospace;
+}
+
+.rt-td-inner {
+  padding: 4px;
+}
+
+/* figures caption */
+.header-section-number {
+  color: #2c2825;
+}
+
+.panel-caption,
+.figure-caption {
+  font-family: "Fira Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c2825;
+  text-align: left;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+

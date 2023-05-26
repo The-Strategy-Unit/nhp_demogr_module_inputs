@@ -1,0 +1,1055 @@
+---
+title: "Modeling Changes in Population Health Status"
+author: "[Paul Seamer](mailto:paulseamer@nhs.net)"
+author-title: ""
+format:
+  html:
+    toc: true
+    toc-title: Contents
+    code-fold: true
+    code-summary: "Show the code"
+    number-sections: true
+    css: "model-pop-health-status.css"
+execute: 
+  echo: false
+  output: false
+knitr:
+  opts_chunk: 
+    dev: "ragg_png"
+fig-cap-location: top
+fig-align: left
+editor: source
+---
+
+```{=html}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Mono&family=Fira+Sans:wght@400;700&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+```
+
+```{r setup}
+# packages
+{
+  library("dplyr")
+  library("fanplot")
+  library("ggplot2")
+  library("ggridges")
+  library("ggtext")
+  library("here")
+  library("htmltools")
+  library("MetBrewer")
+  library("moments")
+  library("nloptr")
+  library("patchwork")
+  library("purrr")
+  library("ragg")
+  library("reactable")
+  library("readr")
+  library("tictoc")
+  library("tidyr")
+}
+
+# functions
+source(here("fx-utilities.R"))
+
+# fonts
+font_hoist("Roboto")
+
+# theme
+source(here("fx-theme-nhp-demogr.R"))
+theme_set(theme_nhp_demogr())
+
+# palette
+pal <- met.brewer("Hiroshige", 12)
+
+# parameters
+qoi_nm    <- "Share of remaining LE free of disability age 65"
+qoi_2018f <- .467
+qoi_2018m <- .526
+gam_lim   <- .44
+gam_shp   <- 2.36
+gam_rt    <- 50.6
+
+# add these?
+base_year    <- 2018L
+end_year     <- 2043L
+qoi_ref_year <- 2035L
+qoi_ref_age  <- 65L
+
+# add these?
+# adjust these for debugging to speed things up
+# c.25-30mins to run entire script at recommended values in parentheses
+# add sample_size #solve-spnorm, #conv-mod-input (1e6, 1e5)
+# add d-statistic #solve-spnorm, #conv-mod-input, (.025, .005)
+```
+
+```{r inputs}
+le_dat <- read_csv(
+  here("data-raw", "longrun_ts_le_65.csv"),
+  show_col_types = FALSE)
+
+dfle_dat <- read_csv(
+  here("data-raw", "longrun_ts_dfle_65.csv"),
+  show_col_types = FALSE)
+
+ex_dat <- readRDS(here("data", "npp_2018b_ex.rds"))
+
+# we use period LE only
+ex_dat <- ex_dat |>
+  filter(type == "period") |>
+  mutate(data = map(
+    data, \(x) x |>
+      mutate(
+        across("sex", \(x) case_match(x, "females" ~ "f", "males" ~ "m", .default = sex))
+      )
+  ))
+
+# save out
+ex_dat |> 
+  mutate(data = map(
+    data, \(x) x |> 
+      filter(year >= 2018, year <= 2043, age >= 55L) |> 
+      group_by(sex, age) |>
+      mutate(ex_chg = ex - ex[1]) |>
+      ungroup()
+  )) |> 
+  unnest(data) |> 
+  select(base, type, var, sex, year, age, ex, ex_chg) |> 
+  write_rds(here("data", "life_expectancy_change.rds"))
+```
+
+## Background
+
+Demographic changes translate into need or demand for healthcare via two main channels.
+
+1.  First, need for healthcare increases with the size of the population, as the needs of a larger population are proportionately greater than those of a smaller population.
+2.  Second, need increases with the proportion of older people in the population, because per capita utilisation tends to be higher for the old than the young.
+
+The concept that, on average, a larger or older population will have a greater need for healthcare is uncomplicated. However, in our experience little if any consideration is given to health status. Studies show that the demand for and use of health care depends ultimately on the health status and functional ability of citizens. While age is a useful indicator of health status (as shown by the steep upward slope of age-related expenditure profiles), it is not the causal factor.
+
+Methods that overlook or ignore health status implicitly assume that age-specific utilisation remains constant over time. This \`overlooks the fact that rising life expectancy makes ... older people "younger", healthier, and fitter than their peers in earlier cohorts\`, and risks overstating the effect of population aging on demand for health care.
+
+## Theories of population aging
+
+Good data on population health by age is limited and what evidence there is on secular trends in health status (prevalence of chronic conditions, disability, or self-assessed general health) presents a mixed picture. There is an unsettled debate about how population health status will evolve in relation to the growing life expectancy---will the additional years of life that recent cohorts have gained (and stand to gain) be spent in good health or disability and frailty? Alternative explanations for continued increases in life expectancy emphasise different causal factors and have different implications for morbidity in later life.
+
+## Calibrating an adjustment for health status
+
+An elicitation workshop on population health status took place in October 2022. The purpose of the workshop was to help the Strategy Unit SU and New Hospitals Programme NHP reach a view about how population health status will evolve over the coming decades. The specific quantity/parameter of interest QOI was:
+
+> For a typical person of age 65 years in 2035, what proportion of their remaining life expectancy will be spent free of disability (i.e., without a limiting long-standing illness)?
+
+The primary output from the workshop was a probability distribution summarizing the views of a group of experts about the QOI. The distribution was for a fixed point in the future, 2035. The remainder of this document describes a process for using that probability distribution to calibrate an adjustment for population health status as part of a method for estimating the impact of population aging on future demand for health care.
+
+## The workshop distribution
+
+The workshop distribution is a [gamma](https://en.wikipedia.org/wiki/Gamma_distribution) distribution defined in the range $.44 > x < \infty$ with a shape parameter $\alpha = 2.36$ and a rate parameter $\beta = 50.6$. This is different from a truncated distribution. @fig-qoi-pdf shows a random sample of values generated from the workshop gamma distribution.
+
+```{r fig-qoi-pdf, fig.width=140/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-qoi-pdf
+#| fig-cap: "QOI distribution from the workshop"
+set.seed(014796)
+qoi_dist <- (gam_lim + rgamma(n = 1e5, shape = gam_shp, rate = gam_rt)) |>
+  as_tibble(.name_repair = ~"qoi")
+
+fig_qoi_pdf <- ggplot(data = qoi_dist) +
+  geom_density(aes(x = qoi), stat = "density", color = pal[1]) +
+  scale_x_continuous(name = qoi_nm) +
+  scale_y_continuous(name = NULL, expand = expansion(mult = c(0, .05)))
+
+ggsave(here("figures", "nb_qoi_pdf.png"),
+       fig_qoi_pdf, width = 140, height = 100, units = c("mm"))
+
+fig_qoi_pdf
+```
+
+## Using the workshop distribution
+
+The workshop was planned with the intention of eliciting separate distributions for females and males. However, this did not prove possible and instead a combined distribution for both sexes was produced. In order to leave open the option of modelling different assumptions about future health status for men and women we require a method for deriving sex-specific distributions. The workshop distribution was produced for a fixed point in the future, 2035. In order to use the distribution to model health status for different end points we need to develop a method for extrapolating the distribution across time.
+
+To use the workshop distribution as part of a modeling process we need to:
+
+1.  Derive separate distributions for men and women
+2.  Extrapolate the distribution across time, to produce equivalent distributions for each year from 2018 to at least 2050
+
+### Derive separate distributions for men and women
+
+We use current data on disability free life expectancy DFLE to derive sex-specific QOI distributions. We do this by applying a multiplicative constant (dependent on sex) to the workshop distribution. @fig-qoi-pdf-bysex shows the resulting shifted distributions
+
+$$
+\begin{align}
+QOI_{f|m}=QOI_{wshop}\times x_{f|m} \\
+\end{align}
+$$
+where:
+$$
+\begin{align}
+x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)} \\
+\end{align}
+$$ {#eq-derive-sex}
+
+```{r derive-sex}
+base_le <- le_dat |>
+  filter(start == base_year) |>
+  mutate(var = "le")
+base_dfle <- dfle_dat |>
+  filter(start == base_year) |>
+  mutate(var = "dfle")
+
+base_dat <- bind_rows(base_dfle, base_le) |>
+  select(-source) |>
+  pivot_longer(m:f, names_to = "sex", values_to = "years") |>
+  pivot_wider(names_from = var, values_from = years) |>
+  mutate(ylwd = le - dfle, dfle_pct = dfle / le * 100)
+
+# calculate multiplicative constant to shift workshop distribution for f/m
+mx_const <- base_dat |> 
+  mutate(mx = dfle_pct / mean(dfle_pct)) |> 
+  select(sex, mx)
+
+mx_f <- mx_const$mx[mx_const$sex == "f"]
+mx_m <- mx_const$mx[mx_const$sex == "m"]
+
+set.seed(014796)
+f_dist <- (gam_lim + rgamma(n = 1e5, shape = gam_shp, rate = gam_rt)) * mx_f
+set.seed(014796)
+m_dist <- (gam_lim + rgamma(n = 1e5, shape = gam_shp, rate = gam_rt)) * mx_m
+
+qoi_dists <- tibble(p = qoi_dist$qoi, f = f_dist, m = m_dist ) |> 
+  pivot_longer(cols = everything(), names_to = "sex", values_to = "qoi")
+```
+
+```{r fig-qoi-pdf-bysex, fig.width=140/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-qoi-pdf-bysex
+#| fig-cap: "QOI workshop distribution by sex"
+fig_qoi_bysex_pdf <- ggplot(data = qoi_dists) +
+  geom_density(aes(
+    x = qoi, group = sex, fill = sex),
+    stat = "density",
+    color = NA,
+    alpha = .4) +
+  scale_fill_manual(values = pal[c(1, 3, 11)]) +
+  scale_alpha_manual(values = rep(.5, 3)) +
+  scale_x_continuous(name = "% remaining LE free of disability at age 65") +
+  scale_y_continuous(name = NULL, expand = c(0, 0)) +
+  theme(legend.position = c(.8, .7))
+
+ggsave(
+  here("figures", "nb_qoi_pdf_bysex.png"),
+  fig_qoi_bysex_pdf, width = 140, height = 100, units = c("mm")) 
+
+fig_qoi_bysex_pdf
+```
+
+### Extrapolate the workshop distribution across time {#sec-extrapolating}
+
+To complete the extrapolation task we must reason about the workshop participants' assessment of factors affecting the future path of the QOI based on a central view and the risk surrounding it. To generate forecasting distributions at different times across the forecasting horizon we need to know three parameters.
+
+1.  a measure of central tendency or central view
+2.  the degree of uncertainty
+3.  the balance of risk
+
+The most obvious starting point is to assume a linear evolution from the QOIs current value to its most likely value in 2035 and beyond. However, a well-known side-effect of assuming persistent linear change is that your forecast will sooner or later arrive at an implausible value, in our case 0% or 100%. A common remedy for this problem is to replace a linear function with a logarithmic function (logarithmic growth curves increase quickly to start with, but the gains decrease as time goes on).
+
+Similarly, a reasonable starting assumption for the uncertainty parameter might be to assume it evolves in a linear fashion i.e., the uncertainty surrounding a ten year central estimate is double that for a five year horizon. Although over a long enough time frame the implied uncertainty would eventually exceed the bounds of the QOI ($0\% > QOI < 100\%$).
+
+The workshop distribution is asymmetric (it is positively skewed with a longer right tail). The reason for this is that participants' view on the balance of risk was on the upside---they felt there was a greater risk that the actual QOI would be in excess of their central forecast than it would be below. Our view is that in the absence of a clear rationale for changing the balance of risk we should assume this parameter remains constant.
+
+#### The split normal (or two-piece normal) distribution
+
+The gamma distribution is defined by two parameters: a shape parameter $\alpha = k$ and a scale parameter $\theta$ or alternatively a shape parameter $\alpha = k$ and an inverse scale parameter $\beta = 1/\theta$, called a rate parameter.
+
+Altering the rate parameter of a gamma distribution has the general effect of shrinking its range, but its mode (and other measures of central tendency) are also affected. This is different to a normal distribution where the standard deviation parameter can be altered without any effect on the mean. However, the normal distribution is symmetric, while the workshop distribution is skewed.
+
+The [split normal](https://en.wikipedia.org/wiki/Split_normal_distribution) distribution is formed from joining at the mode the corresponding halves of two normal distributions with the same mode but different variance. The split normal distribution has proved useful for generating forecasting distributions. In particular, its use underpins the fan charts produced by the Bank of England (@fig-boe-fan).
+
+Intuitively, a split normal distribution should give a reasonable approximation of a gamma distribution. If we can find a split normal distribution that closely approximates the workshop gamma distribution then the extrapolation task becomes much more tractable.
+
+::: {#fig-boe-fan}
+[![](mpc_cpi_fan_chart_feb_2023.jpg)](https://en.wikipedia.org/wiki/Fan_chart_(time_series))
+
+Bank of England fan chart
+:::
+
+#### Finding a split normal distribution that approximates the workshop gamma distribution {#sec-spnorm-approx-gamma}
+
+There are several equivalent parametrizations for the split normal distribution. The two most popular both take into account three parameters, in the first $-\infty < \mu > \infty$ is the mode, and $\sigma_1 > 0$ and $\sigma_2 > 0$ are the left and right hand side standard deviations respectively. When $\sigma_1 > \sigma_2$ the distribution is biased to the left i.e., negatively skewed, and when $\sigma_2 > \sigma_1$, the distribution is biased to the right i.e., positively skewed and if $\sigma_1 = \sigma_2$ the distribution is normal. An alternative parametrization uses, mode $\mu$, uncertainty $\sigma$ and an inverse skewness indicator $-1 < \gamma > 1$. If $\gamma > 0$ the distribution is biased to the left, if $\gamma < 0$, the distribution is biased to the right and if $\gamma = 0$, the distribution is normal.
+
+In a typical forecasting process, such as that followed by the Bank of England, the path of $\mu$ is estimated by a time series forecasting model, the uncertainty parameter $\sigma$ comes from the historical variability of the economic indicator that is being forecast (e.g., inflation) and the asymmetry parameter $p = \frac{\sigma_1} {\sigma_1 + \sigma_2}$ is somewhat judgemental depending upon the perception of the balance of risks in the future.
+
+Given that we wish to fix the skewness (balance of risk) the second parametrisation should be easier to work with. Therefore we need to find the values for mode, uncertainty and skew that define a split normal distribution that best fits (over the entire probability density function) the workshop gamma distribution. The following code uses the R [*nloptr*](https://astamm.github.io/nloptr/) package (an R interface to [NLopt](https://nlopt.readthedocs.io/en/latest/) an open-source library for non-linear optimization) to find the values of the two control parameters (the mode of the gamma distribution can be obtained directly) that minimize the two-sample [Kolmogorov--Smirnov](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) test statistic for a random sample from the workshop gamma distribution and the CDF for a split normal.
+
+```{r solve-spnorm}
+#| echo: true
+# x argument to stats::ks.test() must be a vector of data values not an actual CDF
+# a large sample required here to approximate the true underlying distribution
+gam_mod <- (gam_lim + ((gam_shp - 1) / gam_rt))
+set.seed(014796)
+gam <- (gam_lim + rgamma(n = 1e6, shape = gam_shp, rate = gam_rt))
+
+# objective function
+dist_search <- function(x) {
+  return(unname(ks.test(
+    gam,
+    "psplitnorm",
+    mode = gam_mod, sd = x[1], skew = x[2]
+  )$statistic))
+}
+
+# initial values for controls (SD & skew)
+# by first solving and then plugging in the results as initial values it may be
+# possible to obtain a better solution, so-called 'polishing'
+x0 <- c(.02, 0.75)
+
+# use this algorithm (incl. set seed)
+opts <- list("algorithm" = "NLOPT_LN_SBPLX", "xtol_rel" = 1.0e-16, "maxeval" = 1e7, "ranseed" = 014796)
+
+# solve the objective function
+res <- nloptr::nloptr(
+  x0 = x0,
+  # bounds for the controls
+  # skewness must lie between -1 and 1
+  lb = c(0, -1),
+  ub = c(6, 1),
+  eval_f = dist_search,
+  eval_grad_f = NULL,
+  opts = opts
+)
+
+# check D statistic
+if (res$objective > .025) {
+    rlang::abort(c(
+    "D statistic is too high"
+    ))
+  }
+
+# plot the fit
+dat_gam <- data.frame(x = gam)
+sp_norm <- rsplitnorm(n = 1e5, mode = gam_mod, sd = res$solution[1], skew = res$solution[2])
+dat_sp_norm <- data.frame(x = sp_norm)
+
+cdf_seq <- seq(.4, .8, .001)
+cdf_gam <- data.frame(x = cdf_seq, y = ecdf(gam)(cdf_seq))
+cdf_sp_norm <- data.frame(x = cdf_seq, y = ecdf(sp_norm)(cdf_seq))
+
+fig_spnorm_pdf <- ggplot() +
+  geom_density(aes(x = x), data = dat_gam, color = pal[1], linewidth = .8) +
+  geom_density(aes(x = x), data = dat_sp_norm, color = pal[11], linewidth = .8) +
+  scale_x_continuous(name = qoi_nm, limits = c(.4, .8), breaks = seq(.4, .8, .1)) +
+  scale_y_continuous(name = NULL, expand = expansion(mult = c(0, .05))) +
+  labs(subtitle = "<span style = 'color: #e76254;'>Workshop gamma</span> v <span style = 'color: #32608D;'>split normal</span> PDF") +
+  theme(plot.subtitle = element_markdown())
+
+fig_spnorm_cdf <- ggplot() +
+  geom_line(aes(x = x, y = y), data = cdf_gam, color = pal[1], linewidth = .8) +
+  geom_line(aes(x = x, y = y), data = cdf_sp_norm, color = pal[11], linewidth = .8) +
+  scale_x_continuous(name = qoi_nm, limits = c(.4, .8), breaks = seq(.4, .8, .1)) +
+  scale_y_continuous(name = NULL, expand = expansion(mult = c(0, .05))) +
+  labs(subtitle = "<span style = 'color: #e76254;'>Workshop gamma</span> v <span style = 'color: #32608D;'>split normal</span> CDF") +
+  theme(plot.subtitle = element_markdown())
+
+# table of percentiles
+probs <- c(0, .01, .05, .1, .25, .5, .75, .9, .95, .99, 1)
+spnorm_ptiles <- tibble(
+  "ptile" = paste0(c(0, 1, 5, 10, 25, 50, 75, 90, 95, 99, 100), "%"),
+  "gamma" = quantile(dat_sp_norm$x, probs = probs),
+  "spnorm" = quantile(dat_gam$x, probs = probs)
+)
+```
+
+The resulting fit is close (@fig-spnorm-dfxs), especially for the middle section of the distribution and only starts to deviate at the extremes (beyond the 95th percentile). Both the gamma and the split normal have high kurtosis---they are heavy-tailed compared to the normal distribution and have a higher propensity to produce outliers. The gamma has a kurtosis of `r sprintf("%1.3f", moments::kurtosis(gam))` and the split normal has a kurtosis of `r sprintf("%1.3f", moments::kurtosis(sp_norm))` (a kurtosis greater than 3 indicates positive excess kurtosis). Given that the original workshop gamma distribution can produce outliers with high values of the QOI that are far from the mode substituting it for a split normal distribution that is slightly more conservative in this regard does not seem like a significant drawback.
+
+```{r fig-spnorm-dfxs, fig.width=200/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-spnorm-dfxs
+#| fig-cap: "Workshop gamma v. split normal comparison"
+fig_spnorm_dfxs <- fig_spnorm_pdf +
+  plot_spacer() +
+  fig_spnorm_cdf + 
+  plot_layout(nrow = 1, widths = c(9, 1, 9))
+
+ggsave(here("figures", "nb_spnorm_dfxs.png"),
+  fig_spnorm_dfxs,
+  width = 200, height = 100, units = c("mm"))
+
+fig_spnorm_dfxs
+```
+
+```{r fig-rtbl-spnorm-ptiles}
+#| output: true
+#| label: fig-rtbl-spnorm-ptiles
+#| fig-cap: "Percentiles workshop gamma v. split normal"
+# if you prefix chunk names with 'tbl-' Quarto will try to add a caption
+# here i am using HTML to create a caption so avoid using 'tbl-' prefix
+tbl_spnorm_ptiles <- reactable(
+  spnorm_ptiles,
+  pagination = FALSE,
+  defaultColGroup = colGroup(headerClass = "group-header"),
+  defaultColDef = colDef(class = "cell", headerClass = "header"),
+  columns = list(
+    ptile = colDef(
+      name = "Percentile",
+      align = "left",
+      width = 100,
+      style = list(fontFamily = "Fira Mono, sans serif", whiteSpace = "pre")
+    ),
+    gamma = colDef(
+      name = "Gamma",
+      align = "center",
+      width = 120,
+      style = list(fontFamily = "Fira Mono, sans serif", whiteSpace = "pre"),
+      cell = function(value) {
+        value <- sprintf("%1.3f", value)
+      },
+    ),
+    spnorm = colDef(
+      name = "Split normal",
+      align = "center",
+      width = 120,
+      style = list(fontFamily = "Fira Mono, sans serif", whiteSpace = "pre"),
+      cell = function(value) {
+        value <- sprintf("%1.3f", value)
+      },
+    )
+  )
+)
+
+react_tbl_div_sans_title(tbl_spnorm_ptiles, selector = "rtbl-spnorm-ptiles")
+```
+
+#### Generating distributions for other years
+
+The modal value of the workshop distribution is `r sprintf("%1.3f", gam_mod)`. The actual value of the QOI in 2018 is `r qoi_2018m`. As outlined in @sec-extrapolating we generate forecast distributions for all years (to 2080) using first a linear slope for the mode and uncertainty, and second a logarithmic path before comparing the results. In both cases the balance of risk or skew parameter is fixed for the duration of the horizon. On balance we favour the use of a linear path, which has the added advantage of being simpler to explain.
+
+```{r extrap-all-years}
+extrap_dat <- tibble(
+  "year" = as.character(seq(2018, 2080, 1)),
+  "lin_mode" = NA_real_,
+  "lin_sd" = NA_real_,
+  "lin_skew" = NA_real_,
+  "log_mode" = NA_real_,
+  "log_sd" = NA_real_,
+  "log_skew" = NA_real_
+) |>
+  # define starting values and values in 2035
+  mutate(
+    across(
+      c(lin_sd, log_sd),
+      \(x) x <- case_match(year, "2035" ~ res$solution[1])
+    ),
+    across(
+      c(lin_skew, log_skew),
+      \(x) x <- case_match(year, "2035" ~ res$solution[2])
+    ),
+    across(
+      c(lin_mode, log_mode),
+      \(x) x <- case_match(
+        year,
+        "2018" ~ qoi_2018m,
+        "2035" ~ gam_mod
+      )
+    ),
+    across(
+      c(lin_sd, lin_skew, log_sd, log_skew),
+      \(x) x <- case_when(year == "2018" ~ 0, .default = x)
+    )
+  ) |>
+  mutate(
+    year = as.integer(year),
+    # interpolate linear mode
+    lin_mode = predict(lm(lin_mode ~ year), newdata = data.frame(year)),
+    # interpolate linear SD
+    lin_sd = predict(lm(lin_sd ~ year), newdata = data.frame(year)),
+    # keep skew constant
+    across(
+      c(lin_skew, log_skew),
+      \(x) x <- case_when(year != 2018 ~ res$solution[2], .default = lin_skew)
+    )
+  ) |>
+  mutate(
+    # model log curve for mode
+    log_mode = predict(lm(log_mode ~ log(year - 2017)), newdata = data.frame(year - 2017)),
+    # model log curve for  SD
+    log_sd = predict(lm(log_sd ~ log(year - 2017)), newdata = data.frame(year - 2017))
+  )
+
+# model log curve for mode
+x <- extrap_dat$year - 2017
+y <- extrap_dat$log_mode
+m <- lm(y ~ log(x))
+pr <- predict(m, newdata = data.frame(year = extrap_dat$year - 2017))
+pdat <- data.frame(x = x, y = pr)
+
+fig_mode_path <- ggplot(pdat) +
+  geom_point(aes(x = year - 2017, y = lin_mode), shape = 19, color = pal[1], data = extrap_dat) +
+  geom_point(aes(x = x, y = y), shape = 19, color = pal[11], alpha = .6) +
+  scale_x_continuous(name = NULL, limits = c(1, 63), breaks = c(seq(3, 63, 10)), labels = c(seq(3, 63, 10) + 2017)) +
+  scale_y_continuous(name = NULL, expand = expansion(mult = c(0, .05))) +
+  labs(subtitle = "Mode &mu;, <span style = 'color: #e76254;'>linear</span> v. <span style = 'color: #32608D;'>logarithmic</span>") +
+  theme(plot.subtitle = element_markdown())
+
+# model log curve for SD
+x <- extrap_dat$year - 2017
+y <- extrap_dat$log_sd
+m <- lm(y ~ log(x))
+pr <- predict(m, newdata = data.frame(year = extrap_dat$year - 2017))
+pdat <- data.frame(x = x, y = pr)
+
+fig_sd_path <- ggplot(pdat) +
+  geom_point(aes(x = year - 2017, y = lin_sd), shape = 19, color = pal[1], data = extrap_dat) +
+  geom_point(aes(x = x, y = y), shape = 19, color = pal[11], alpha = .6) +
+  scale_x_continuous(name = NULL, limits = c(1, 63), breaks = c(seq(3, 63, 10)), labels = c(seq(3, 63, 10) + 2017)) +
+  scale_y_continuous(name = NULL, expand = expansion(mult = c(0, .05))) +
+  labs(subtitle = "Uncertainty &sigma;, <span style = 'color: #e76254;'>linear</span> v. <span style = 'color: #32608D;'>logarithmic</span>") +
+  theme(plot.subtitle = element_markdown())
+
+# model split normal distribution
+mod_sp_norm <- function(year, mode, sd, skew) {
+  sn_obs <- 1e5
+  distr <- if (year == 2018L) {
+    mode
+  } else {
+    rsplitnorm(n = sn_obs, mode = mode, sd = sd, skew = skew)
+  }
+}
+
+# extrapolate
+extrap_dist <- extrap_dat |>
+  mutate(
+    lin_dist = pmap(
+      list(year, lin_mode, lin_sd, lin_skew),
+      \(year, md, sd, sk) mod_sp_norm(year, md, sd, sk)
+    ),
+    log_dist = pmap(
+      list(year, log_mode, log_sd, log_skew),
+      \(year, md, sd, sk) mod_sp_norm(year, md, sd, sk)
+    )
+  ) |>
+  unnest(c(lin_dist, log_dist)) |>
+  select(year, lin_dist, log_dist, lin_mode, log_mode)
+
+dist_names <- c(
+  lin_dist = "Linear",
+  log_dist = "Logarithmic"
+)
+
+# ridge plot (unknown pleasures album cover)
+fig_ridge <- extrap_dist |>
+  pivot_longer(cols = c(lin_dist, log_dist), names_to = "dist", values_to = "val") |>
+  filter(year <= 2035L, year != 2018L) |>
+  mutate(year = as.factor(year)) |>
+  mutate(forcol = case_match(dist, "lin_dist" ~ "A", "log_dist" ~ "B")) |> 
+  ggplot(aes(x = val, y = reorder(year, desc(year)), fill = forcol)) +
+  geom_density_ridges(alpha = .5, color = "#686F73", panel_scaling = FALSE, scale = 5, show.legend = FALSE) +
+  coord_cartesian(xlim = c(.45, .6)) +
+  scale_x_continuous(name = NULL) +
+  scale_y_discrete(name = NULL) +
+  scale_fill_manual(values = c(pal[1], pal[11])) +
+  facet_wrap(vars(dist), scales = "fixed", labeller = as_labeller(dist_names)) +
+  labs(caption = "Note: By design, distributions in 2035 will be almost exactly equal.")
+
+# box plot
+fig_box <- extrap_dist |>
+    pivot_longer(cols = c(lin_dist, log_dist), names_to = "dist", values_to = "val") |>
+    filter(year <= 2050L, year != 2018L) |>
+    mutate(year = as.factor(year)) |> 
+      mutate(forcol = case_match(dist, "lin_dist" ~ "A", "log_dist" ~ "B")) |>
+    ggplot(aes(x = year, y = val, color = forcol)) +
+  geom_boxplot(fill = NA, outlier.alpha = .3, outlier.size = 1, linewidth = .5, show.legend = FALSE) +
+  scale_y_continuous(name = NULL) +
+  scale_x_discrete(name = NULL, labels = c("'19", as.character(seq(20, 50, 1)))) +
+    scale_color_manual(values = c(pal[1], pal[11])) +
+  facet_wrap(vars(dist), ncol = 1, scales = "fixed", labeller = as_labeller(dist_names))
+
+seq_years <- c(2018, seq(2025, 2080, 5))
+
+# table central tendency measures
+ct_tend <- extrap_dist |>
+  pivot_longer(cols = c(lin_dist, log_dist), names_to = "dist", values_to = "val") |>
+  filter(year %in% seq_years) |>
+  group_by(year, dist) |>
+  summarise(
+    # this is an estimate of the mode for the realised sample
+    # dist == "lin_dist" ~ modeest::mlv(val, method = "HSM"),
+    # dist == "log_dist" ~ modeest::mlv(val, method = "HSM")
+    mn = mean(val),
+    p50 = quantile(val, probs = .5),
+    .groups = "drop"
+  ) |>
+  left_join(
+    extrap_dat |> 
+      select(year, lin_mode, log_mode),
+    by = "year"
+    ) |> 
+  mutate(
+    md = case_when(
+    # this is the theoretical mode for an infinitely large sample
+    dist == "lin_dist" ~ lin_mode,
+    dist == "log_dist" ~ log_mode),
+    .after = year
+    ) |>
+  select(year, dist, md, mn, p50) |>
+  pivot_wider(id_cols = c(year), names_from = dist, values_from = md:p50)
+```
+
+```{r fig-mode-and-sd-paths, fig.width=200/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-comp-paths
+#| fig-cap: "Linear v. logarithmic paths for central view and uncertainty"
+fig_mode_and_sd_paths <- fig_mode_path +
+  plot_spacer() +
+  fig_sd_path +
+  plot_layout(nrow = 1, widths = c(9, 1, 9))
+
+ggsave(here("figures", "nb_qoi_mode_and_sd_paths.png"),
+  fig_mode_and_sd_paths, width = 200, height = 100, units = c("mm"))
+
+fig_mode_and_sd_paths
+```
+
+```{r fig-ridge, fig.width=200/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-ridge
+#| fig-cap: "Linear v logarithmic forecast distributions to 2035"
+ggsave(here("figures", "nb_fcast_dists_ridge_plot.png"),
+  fig_ridge,
+  width = 200, height = 100, units = c("mm"))
+
+suppressMessages(print(fig_ridge))
+```
+
+```{r fig-box, fig.width=200/25.4, fig.height=180/25.4}
+#| output: true
+#| label: fig-box
+#| fig-cap: "Linear v logarithmic forecast distributions to 2050"
+ggsave(here("figures", "nb_fcast_dists_box_plot.png"),
+  fig_box, width = 200, height = 180, units = c("mm"))
+
+fig_box
+```
+
+```{r fig-rbl-ct-tend}
+#| output: true
+#| label: fig-rbl-ct-tend
+#| fig-cap: "Central tendency measures linear v. logarithmic"
+val_column <- function(class = NULL, ...) {
+  colDef(
+    align = "center",
+    width = 100,
+    style = list(fontFamily = "Fira Mono, sans serif", whiteSpace = "pre"),
+    cell = function(value) {
+      value <- sprintf("%1.3f", value)
+    },
+    ...
+  )
+}
+
+mode_cols <- c("md_lin_dist", "md_log_dist")
+mean_cols <- c("mn_lin_dist", "mn_log_dist")
+ptile_cols <- c("p50_lin_dist", "p50_log_dist")
+
+tbl_ct_tend <- reactable(
+  ct_tend,
+  pagination = FALSE,
+  defaultColGroup = colGroup(headerClass = "group-header"),
+  defaultColDef = colDef(class = "cell", headerClass = "header"),
+  columnGroups = list(
+    colGroup(name = "Mode", columns = mode_cols),
+    colGroup(name = "Mean", columns = mean_cols),
+    colGroup(name = "50th Percentile", columns = ptile_cols)
+  ),
+  columns = list(
+    year = colDef(
+      name = "Year",
+      align = "left",
+      width = 80,
+      style = list(fontFamily = "Fira Mono, sans serif", whiteSpace = "pre")
+    ),
+    md_lin_dist = val_column(name = "Linear"),
+    md_log_dist = val_column(name = "Log"),
+    mn_lin_dist = val_column(name = "Linear"),
+    mn_log_dist = val_column(name = "Log"),
+    p50_lin_dist = val_column(name = "Linear"),
+    p50_log_dist = val_column(name = "Log")
+  )
+)
+
+react_tbl_div_sans_title(tbl_ct_tend, selector = "rtbl-ct-tend")
+```
+
+### Conversion to model input values
+
+In our approach to modelling the impact of population aging on future demand for healthcare we conceive individuals to have a health status age distinct from their chronological age; it is their health status age that determines their level of healthcare use. An individual's health status age is obtained by subtracting a percentage of their projected increase in life expectancy over the model horizon (taken from life table projections) from their chronological age. The workshop QOI is used alongside data on current disability free life expectancy DFLE and period life expectancy, and projections of period life expectancy to generate a distribution of percentages that are used to obtain an individuals health status age.
+
+> **model input value**: a percentage of the projected increase in life expectancy over the model horizon
+
+$$
+\begin{align}
+Model\text{ }input\text{ }_{y,f|m}=\frac{QOI_{y,f|m}\times ex_{y,f|m} - dfle_{y=2018,f|m}}{ex_{y,f|m} - ex_{y=2018,f|m}}
+\end{align}
+$$ {#eq-model-input}
+
+For someone of chronological age *i*,
+
+$$
+\begin{align}
+Health\text{ }status\text{ }age_{y,f|m}=\text{ }& chronological\text{ }age\text{ } - \\
+& \{model\text{ }input\text{ }_{y,f|m}\times(ex_{i,y,f|m} - ex_{i,y=2018,f|m})\} \\
+\end{align}
+$$ {#eq-age-adj}
+
+### Approximating the distribution of model input values
+
+To short cut drawing values from the QOI distribution and pushing each value through @eq-model-input at model run time we follow a similar process described in @sec-spnorm-approx-gamma to estimate the parameters of a split normal distribution that fits a sample of model input values generated by pushing values sampled from the QOI through @eq-model-input. This obviates the need to use @eq-model-input at model run time. Instead we sample model input values directly from a split normal distribution with fixed parameters. When sampling from the QOI distribution the sample size needs to be large enough to provide sufficient accuracy (note: a larger sample will slow the optimization procedure, but as this only needs to be run once this is not a significant issue). The output of this process is a list of completely specified split normal distributions for combinations of year, sex and life table variant that are sampled from to provide model input values at run time. @fig-rtbl-spnorm-params lists the parameters for females using the principal projection life table. Similar parameter sets are produced for combinations of life table variant and sex, in total 6 sets.
+
+```{r conv-mod-input}
+#| echo: true
+ex_chg_dat <- ex_dat |> 
+  mutate(data = map(
+    data, \(x) x |> 
+      # qoi from workshop relates to a person of age 65 years
+      filter(year >= 2018, age == 65) |> 
+      group_by(sex) |>
+      # change from 2018
+      mutate(ex_chg = ex - ex[1]) |> 
+      ungroup())
+  ) |> 
+  unnest(data) |>
+  # we divide by projected change later so need to prevent zeros occurring here
+  # fixed to be a positive value for consistency (life expectancy is almost always increasing) 
+  mutate(ex_chg = case_when(year != 2018 & ex_chg == 0 ~ abs(jitter(ex_chg)), .default = ex_chg))
+
+# fx to return draw of model input values for combinations of life expectancy variant,
+# sex, and year (3 x 2 x 25 = 150)
+hs_input <- function(
+    dist_pars = extrap_dist,
+    sex_mx = mx_const,
+    dfle = base_dfle,
+    ex = ex_chg_dat,
+    n = 1e5,  # large sample provides greater accuracy but takes longer to estimate parameters
+    var = c("ppp", "lle", "hle"),
+    sex = c("f", "m"),
+    year = 2019L) {
+  
+  # check arguments
+  var <- match.arg(var)
+  sex <- match.arg(sex)
+  
+  test_year <- year < 2019L | year > 2043L
+  if(isTRUE(test_year)){ 
+    message("arg 'year' should be an integer between 2019 and 2043; defaulting to 2019")
+  }
+
+  year <- year * (!test_year) + 2019L * test_year
+  
+  ex_endyr <- ex_chg_dat |>
+    filter(var == {{ var }}, sex == {{ sex }}, year == {{ year }}) |> 
+    pull(ex)
+  
+  proj_chg <- ex_chg_dat |>
+    filter(var == {{ var }}, sex == {{ sex }}, year == {{ year }}) |>
+    pull(ex_chg)
+  
+  dfle_start <- base_dfle |> pull(sex)
+  
+  qoi_draw <- extrap_dat |> 
+    # pull in multiplier for sex
+    mutate(sex = list(c("f", "m"))) |>  
+    unnest(sex) |> 
+    left_join(sex_mx, join_by("sex")) |> 
+    filter(sex == {{ sex }}, year == {{ year }}) |>
+    mutate(qoi_draw = pmap(
+      # use linear extrapolation
+      list(lin_mode, lin_sd, lin_skew),
+      \(md, sd, sk) {
+        rsplitnorm(n = {{ n }}, mode = md, sd = sd, skew = sk) * mx
+        }
+      )) |> 
+  select(qoi_draw) |> 
+  unnest(qoi_draw) |> 
+  pull()
+  
+  dfle_end <- qoi_draw * ex_endyr
+  dfle_chg <- dfle_end - dfle_start
+  
+  return(dfle_chg / proj_chg)
+}
+
+# fx to return mode of model input values
+# estimated by plugging mode of QOI into equation 2
+hs_input_mode <- function(
+    dist_pars = extrap_dist,
+    sex_mx = mx_const,
+    dfle = base_dfle,
+    ex = ex_chg_dat,
+    var = c("ppp", "lle", "hle"),
+    sex = c("f", "m"),
+    year = 2019L) {
+  
+  # check arguments
+  var <- match.arg(var)
+  sex <- match.arg(sex)
+  
+  test_year <- year < 2019L | year > 2043L
+  if(isTRUE(test_year)){ 
+    message("arg 'year' should be an integer between 2019 and 2043; defaulting to 2019")
+  }
+
+  year <- year * (!test_year) + 2019L * test_year
+  
+  ex_endyr <- ex_chg_dat |>
+    filter(var == {{ var }}, sex == {{ sex }}, year == {{ year }}) |> 
+    pull(ex)
+  
+  proj_chg <- ex_chg_dat |>
+    filter(var == {{ var }}, sex == {{ sex }}, year == {{ year }}) |>
+    pull(ex_chg)
+  
+  dfle_start <- base_dfle |> pull(sex)
+
+  qoi_mode <- extrap_dat |>
+    # pull in multiplier for sex
+    mutate(sex = list(c("f", "m"))) |>  
+    unnest(sex) |> 
+    left_join(sex_mx, join_by("sex")) |> 
+    filter(sex == {{ sex }}, year == {{ year }}) |>
+    mutate(qoi_mode = lin_mode * mx) |> 
+    select(qoi_mode) |> 
+    pull()
+
+  dfle_end <- qoi_mode * ex_endyr
+  dfle_chg <- dfle_end - dfle_start
+  
+  return(dfle_chg / proj_chg)
+}
+
+# for these combinations of expectancy variant, sex and year
+args_df <- tibble(
+  expand_grid(
+  var = c("ppp", "lle", "hle"),
+  sex = c("f", "m"),
+  year = 2019:2043
+))
+
+# generate list of draws
+mod_input_draws <- vector(mode = "list", length = nrow(args_df))
+
+for (i in 1:nrow(args_df)) {
+  
+  mod_input_draws[[i]] <- hs_input(
+    var = args_df$var[[i]],
+    sex = args_df$sex[[i]],
+    year = args_df$year[[i]]
+    )
+}
+
+# generate list of modes
+mod_input_modes <- vector(mode = "list", length = nrow(args_df))
+
+for (i in 1:nrow(args_df)) {
+  
+  mod_input_modes[[i]] <- hs_input_mode(
+    var = args_df$var[[i]],
+    sex = args_df$sex[[i]],
+    year = args_df$year[[i]]
+  )
+}
+
+# start a timer
+tic("solve for spnorm parameters")
+
+# solve for split normal parameters that fit model input distribution
+# inputs 1) sample of values 2) population mode
+sol_list <- vector(mode = "list", length = length(mod_input_draws))
+
+for (i in 1:length(mod_input_draws)) {
+  
+  x0 <- c(.4, .5)
+  
+  # use this algorithm (incl. set seed)
+  opts <- list("algorithm" = "NLOPT_LN_SBPLX", "xtol_rel" = 1.0e-16, "maxeval" = 1e7, "ranseed" = 014796)
+  
+  # objective function
+  dist_search <- function(x) {
+    return(unname(ks.test(
+      mod_input_draws[[i]],
+      "psplitnorm",
+      mode = mod_input_modes[[i]], sd = x[1], skew = x[2]
+    )$statistic))
+  }
+  
+  sol_list[[i]] <- nloptr::nloptr(
+    x0 = x0,
+    # bounds for the controls
+    # skewness must lie between -1 and 1
+    lb = c(0, -1),
+    ub = c(10, 1),
+    eval_f = dist_search,
+    eval_grad_f = NULL,
+    opts = opts
+  )
+  
+  # check D statistic
+  if (sol_list[[i]]$objective >= .005) {
+    rlang::abort(c(
+    "D statistic is too high"
+    ))
+  }
+  
+}
+
+# stop the timer
+toc(log = TRUE)
+tic.log(format = TRUE)
+
+spnorm_params <- args_df |> 
+  mutate(
+    ks_test_d = map_dbl(sol_list, \(x) x$objective),
+    mode = map_dbl(mod_input_modes, \(x) x),
+    sd = map_dbl(sol_list, \(x) x$solution[1]),
+    skew = map_dbl(sol_list, \(x) x$solution[2])
+  )
+
+write_rds(spnorm_params, here("data", "split_normal_parameters.rds"))
+
+spnorm_params_fortbl <- spnorm_params |> filter(var == "ppp", sex == "f") |> select(-var, -sex, -ks_test_d)
+```
+
+```{r fig-rtbl-spnorm-params}
+#| output: true
+#| label: fig-rtbl-spnorm-params
+#| fig-cap: "Parameters for split normal distribution used to sample model input values"
+tbl_spnorm_params <- reactable(
+  spnorm_params_fortbl,
+  pagination = FALSE,
+  defaultColGroup = colGroup(headerClass = "group-header"),
+  defaultColDef = colDef(class = "cell", headerClass = "header"),
+  columns = list(
+    year = colDef(
+      name = "Year",
+      align = "left",
+      width = 80,
+      style = list(fontFamily = "Fira Mono, sans serif", whiteSpace = "pre")
+    ),
+    mode = colDef(
+      name = "Mode",
+      align = "right",
+      width = 100,
+      style = list(fontFamily = "Fira Mono, sans serif", whiteSpace = "pre"),
+      cell = function(value) {
+        value <- sprintf("%1.3f", value)
+      },
+    ),
+    sd = colDef(
+      name = "SD",
+      align = "right",
+      width = 100,
+      style = list(fontFamily = "Fira Mono, sans serif", whiteSpace = "pre"),
+      cell = function(value) {
+        value <- sprintf("%1.3f", value)
+      },
+    ),
+    skew = colDef(
+      name = "Skew",
+      align = "right",
+      width = 100,
+      style = list(fontFamily = "Fira Mono, sans serif", whiteSpace = "pre"),
+      cell = function(value) {
+        value <- sprintf("%1.3f", value)
+      },
+    )
+  )
+)
+
+react_tbl_div_sans_title(tbl_spnorm_params, selector = "rtbl-spnorm-params")
+```
+
+## Effect of life table variants
+
+The future development of life expectancy is uncertain. To reflect this uncertainty the Office for National Statistics ONS publish variant life tables that reflect different assumptions (high and low variants are produced). The model input values (@eq-model-input) depend on expected changes in life expectancy. @fig-ex-trends shows projected trends in expectancy for the high and low variants alongside the principal projection. @fig-levar-effect shows the effect of life table variants on the implied health status age for persons of age 65 years old in 2035. Life table variants are mapped to ONS population projections such that user selection of a population projection variant determines the life table variant used.
+
+```{r fig-ex-trends, fig.width=200/25.4, fig.height=180/25.4}
+#| output: true
+#| label: fig-ex-trends
+#| fig-cap: "Projected trends in period life expectancy by life table variant"
+ex_trends_dat <- ex_dat |> 
+  mutate(data = map(
+    data, \(x) x |> 
+      filter(year >= 2018, year <= 2043, age %in% c(65, 75, 85, 95))
+  )) |> 
+  unnest(data)
+
+fig_ex_trends_f <- ggplot(data = ex_trends_dat |> filter(sex == "f")) +
+  geom_line(aes(x = year, y = ex, group = var, color = var), show.legend = FALSE) +
+  facet_wrap(vars(age), nrow = 1, scales = "free_y") +
+  scale_color_manual(values = pal[c(1, 3, 11)]) +
+  scale_x_continuous(name = NULL, breaks = seq(2020, 2040, by = 5), labels = c("2020", as.character(seq(25, 40, 5)))) +
+  scale_y_continuous(name = NULL, expand = expansion(mult = c(0, .05))) +
+  labs(subtitle = "Women (<span style = 'color: #e76254;'>High</span>, <span style = 'color: #32608D;'>Princ.</span>, <span style = 'color: #F49E51;'>Low</span>)") +
+  theme(plot.subtitle = element_markdown())
+
+fig_ex_trends_m <- ggplot(data = ex_trends_dat |> filter(sex == "m")) +
+  geom_line(aes(x = year, y = ex, group = var, color = var), show.legend = FALSE) +
+  facet_wrap(vars(age), nrow = 1, scales = "free_y") +
+  scale_color_manual(values = pal[c(1, 3, 11)]) +
+  scale_x_continuous(name = NULL, breaks = seq(2020, 2040, by = 5), labels = c("2020", as.character(seq(25, 40, 5)))) +
+  scale_y_continuous(name = NULL, expand = expansion(mult = c(0, .05))) +
+  labs(subtitle = "Men (<span style = 'color: #e76254;'>High</span>, <span style = 'color: #32608D;'>Princ.</span>, <span style = 'color: #F49E51;'>Low</span>)") +
+  theme(plot.subtitle = element_markdown())
+
+fig_ex_trends <- fig_ex_trends_f +
+  plot_spacer() +
+  fig_ex_trends_m + 
+  plot_layout(ncol = 1, heights = c(9, 1, 9))
+
+fig_ex_trends
+
+ggsave(here("figures", "nb_ex_trends.png"),
+  fig_ex_trends, width = 200, height = 180, units = c("mm"))
+```
+
+```{r fig-levar-effect, fig.width=200/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-levar-effect
+#| fig-cap: "Effect of life table variants on health status age for persons aged 65 years in 2035"
+dat <- spnorm_params |> 
+  mutate(mod_input = pmap(
+    list(mode, sd, skew),
+    \(md, sd, sk) rsplitnorm(n = 1e5, mode = md, sd = sd, skew = sk)
+  )) |> 
+  left_join(
+    ex_dat |> 
+  mutate(data = map(
+    data, \(x) x |> 
+      filter(year >= 2018, year <= 2043, age == 65) |> 
+      group_by(sex, age) |>
+      mutate(ex_chg = ex - ex[1]) |>
+      ungroup()
+  )) |> unnest(data) |> select(var, year, sex, age, ex_chg), by = c("var", "year", "sex")) |> 
+  mutate(adj = map2(mod_input, ex_chg, `*`)) |> 
+  unnest(adj) |> 
+  mutate(newage = 65 - adj) |> 
+  filter(year == 2035)
+
+dat <- dat |> 
+  mutate(var_label = factor(var, levels = c("lle", "ppp", "hle"), labels = c("low", "prin.", "high")))
+
+sex_label <- c(f = "women", m = "men")
+
+fig_levar_effect <- ggplot(dat) +
+  geom_violin(aes(x = newage, y = var_label, group = var_label, fill = var_label), show.legend = FALSE, color = NA) +
+  geom_vline(aes(xintercept = 65), linewidth = .5, color = "#686F73", linetype = "longdash") +
+  facet_wrap(vars(sex), labeller = labeller(sex = sex_label)) +
+  annotate("text", x = 64, y = 3.5, label = "de-aged", color = "#686F73", family = "Roboto", hjust = 1) + 
+  annotate("text", x = 66, y = 3.5, label = "aged", color = "#686F73", family = "Roboto", hjust = 0) + 
+  scale_fill_manual(values = pal[c(3 ,11, 1)]) +
+  scale_x_continuous(name = NULL, breaks = seq(60, 68, by = 1), limits = c(61, 67)) +
+  scale_y_discrete(name = NULL)
+  
+fig_levar_effect
+
+ggsave(here("figures", "nb_le_variant_effect.png"),
+  fig_levar_effect, width = 200, height = 100, units = c("mm"))
+```
