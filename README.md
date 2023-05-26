@@ -44,5 +44,5 @@ A trust's final catchment population comprises a weighted sum of its catchment L
 
 ## model-pop-health-status.QMD
 
-This notebook describes and implements a method for adjusting demand forecasts for future changes in population health status.
+This [notebook](https://connect.strategyunitwm.nhs.uk/modeling-changes-in-population-health-status/) describes and implements a method for adjusting demand forecasts for future changes in population health status.
 
