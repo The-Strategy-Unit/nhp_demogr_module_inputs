@@ -25,9 +25,11 @@
 renv/library
 
 # folders
-_raw_data/
+data-raw/
 data/
 
 # .qmd build artifacts
 *_files/
 
+# published to posit connect
+notebooks/rsconnect
