@@ -59,7 +59,8 @@ chrt4_trusts_all <- c(
   "RXN",
   "RTX",
   "RH5",
-  "RBA"
+  "RBA",
+  "RAS"
 )
 
 chrt4_trusts <- c(chrt4_trusts_all[!chrt4_trusts_all %in% c("RXN", "RTX", "RH5", "RBA")], "RXN_RTX", "RH5_RBA")
