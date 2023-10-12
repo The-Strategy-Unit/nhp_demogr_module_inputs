@@ -28,6 +28,7 @@ read_snpp_birth_files <- function(dir) {
     # first year of births is 2019
     pivot_longer(cols = `2019`:`2043`, names_to = "year", values_to = "bths") |>
     filter(age_group != "All ages") |>
+    rename(age = age_group) |>
     select(-component) |>
     mutate(sex = str_sub(sex, 1L, 1L)) |>
     # remove metropolitan counties and regions (keep only local authorities)
