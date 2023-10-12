@@ -30,9 +30,9 @@ read_npp_birth_files <- function(dir) {
       cols = `2018 - 2019`:`2117 - 2118`,
       names_to = "year",
       names_prefix = "[0-9]{4} - ",
-      values_to = "pop"
+      values_to = "bths"
     ) |>
-    mutate(age = str_trim(age), area = "England", pop = as.double(pop)) |>
+    mutate(age = str_trim(age), area = "England", bths = as.double(bths)) |>
     mutate(sex = ifelse(sex == "1", "m", "f")) |>
     write_rds(here("data", "npp_2018b_births.rds"))
 }

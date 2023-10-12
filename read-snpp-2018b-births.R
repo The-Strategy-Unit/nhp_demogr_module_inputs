@@ -26,7 +26,7 @@ read_snpp_birth_files <- function(dir) {
   bind_rows(l, .id = "id") |>
     rename_all(tolower) |>
     # first year of births is 2019
-    pivot_longer(cols = `2019`:`2043`, names_to = "year", values_to = "pop") |>
+    pivot_longer(cols = `2019`:`2043`, names_to = "year", values_to = "bths") |>
     filter(age_group != "All ages") |>
     select(-component) |>
     mutate(sex = str_sub(sex, 1L, 1L)) |>
