@@ -43,23 +43,3 @@ read_npp_files <- function(dir) {
 }
 
 read_npp_files("data-raw")
-
-# variant codes
-read_npp_codes <- function(dir) {
-  proj_codes_file <- list.files(
-    here::here(
-      dir
-    ),
-    "NPP codes.txt",
-    recursive = TRUE,
-    full.names = TRUE
-  )
-  readr::read_lines(proj_codes_file) |>
-    tibble::as_tibble() |>
-    dplyr::filter(stringr::str_detect(value, "^[a-z]{3}:")) |>
-    tidyr::separate(value, c("proj_cd", "proj_nm"), ": ") |>
-    dplyr::mutate(proj_cd = stringr::str_c("en_", proj_cd)) |> 
-    saveRDS(here("data", "npp_2018b_codes.rds"))
-}
-
-read_npp_codes("data-raw")
