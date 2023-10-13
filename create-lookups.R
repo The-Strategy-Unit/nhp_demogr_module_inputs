@@ -1,4 +1,4 @@
-# README
+# README ----
 # Keep lookups here
 
 
@@ -37,15 +37,17 @@ lookup_proj_var <- tribble(
   "half_eu_migration", "50% Future EU migration (Not National Statistics)", "npp_ppr", # nolint: line_length_linter.
   "zero_eu_migration", "0% Future EU migration (Not National Statistics)", "npp_ppq" # nolint: line_length_linter.
 ) |>
+  # maps snpp to npp
   mutate(id = case_when(
     ons_id == "principal_proj" ~ "ppp",
-    ons_id == "var_proj_10_year_migration" ~ "pps",
-    ons_id == "var_proj_alt_internal_migration" ~ "ppt",
+    ons_id == "var_proj_10_year_migration" ~ "ppp",
+    ons_id == "var_proj_alt_internal_migration" ~ "ppp",
     ons_id == "var_proj_high_intl_migration" ~ "pph",
     ons_id == "var_proj_low_intl_migration" ~ "ppl",
     str_detect(ons_id, "^npp_") ~ str_remove(ons_id, "npp_"),
     TRUE ~ ons_id
   )) |>
+  # maps projections to life tables
   mutate(exp_id = case_when(
     str_sub(id, 2, 2) == "h" ~ "exp_h",
     str_sub(id, 2, 2) == "l" ~ "exp_l",
