@@ -23,19 +23,11 @@
 
 # 1 ----
 apply_90plus_dist <- function(npp, snpp) {
-  # create a mapping from snpp variants to npp variants
-  var_map <- tibble::tribble(
-    ~ons_id, ~map_id,
-    "principal_proj", "en_ppp",
-    "var_proj_10_year_migration", "en_ppp",
-    "var_proj_alt_internal_migration", "en_ppp",
-    "var_proj_high_intl_migration", "en_pph",
-    "var_proj_low_intl_migration", "en_ppl"
-  )
-  
-  npp_dat <- readRDS(here::here("data", npp))
-  snpp_dat <- readRDS(here::here("data", snpp))
-  
+
+  npp_dat <- read_rds(here("data", npp))
+  snpp_dat <- read_rds(here("data", snpp))
+  lookup_proj_var <- read_csv(here("data", "lookup_proj_var.csv"))
+
   # extract 90+ distribution from npp
   npp_plus90 <- npp_dat |>
     dplyr::group_by(id) |>
