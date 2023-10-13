@@ -24,12 +24,16 @@
 # renv library
 renv/library
 
-# folders
+# data folders
 data-raw/
 data/
 
 # .qmd build artifacts
+# leaflet maps artifacts
 *_files/
+
+# leaflet html maps
+figures/*.html
 
 # published to posit connect
 notebooks/rsconnect
