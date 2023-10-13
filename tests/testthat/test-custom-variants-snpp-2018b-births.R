@@ -1,3 +1,4 @@
+# README ----
 # 1 rank custom variants by total births within each LA (for year == test_yr)
 # and test against ranking of npp variants for total births in England
 # pick a year to test
@@ -15,7 +16,7 @@ cus_rnk <- custom |>
   unnest(data) |>
   group_by(area_code, area_name) |>
   arrange(bths) |>
-  mutate(cus_rnk = 1:n()) |>
+  mutate(cus_rnk = seq_len(n())) |>
   ungroup()
 
 npp_rnk <- npp_dat |>
@@ -25,7 +26,7 @@ npp_rnk <- npp_dat |>
   summarise(bths = sum(bths)) |>
   ungroup() |>
   arrange(bths) |>
-  mutate(npp_rnk = 1:n()) |>
+  mutate(npp_rnk = seq_len(n())) |>
   select(ons_id, npp_rnk)
 
 rnk_diff <- cus_rnk |>
@@ -64,8 +65,8 @@ orig_snpp <- snpp_dat |>
   mutate(data = map(
     data, \(x) x |>
       filter(year == test_yr) |>
-      group_by(area_code, area_name) |> 
-      summarise(bths = sum(bths)) |> 
+      group_by(area_code, area_name) |>
+      summarise(bths = sum(bths)) |>
       ungroup()
   )) |>
   unnest(data) |>
@@ -86,14 +87,16 @@ var_diff <- cus_vars |>
   arrange(diff)
 
 # plot differences
-var_diff |>
-  mutate(area_name = tidytext::reorder_within(area_name, diff, id)) |> 
+p <- var_diff |>
+  mutate(area_name = tidytext::reorder_within(area_name, diff, id)) |>
   ggplot(aes(x = reorder(area_name, diff), y = diff, group = 1L)) +
   geom_point() +
   scale_x_reordered(name = NULL) +
   scale_y_continuous(name = NULL) +
   facet_wrap(vars(id)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, size = rel(.8)))
+
+ggsave("test_custom_variants_snpp_births.png", plot = p, path = here("figures"))
 
 test_that("test difference by LA for custom variants that also appear in
   original snpp variant set", {
