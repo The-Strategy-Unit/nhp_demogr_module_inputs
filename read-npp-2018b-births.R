@@ -24,7 +24,7 @@ read_npp_birth_files <- function(dir) {
   id <- str_extract(npp_files, "(?<=npp_2018b/).*(?=_opendata)")
   l <- map(npp_files, ~ readxl::read_xls(.x, sheet = "Births")) |>
     setNames(id)
-  bind_rows(l, .id = "id") |>
+  bind_rows(l, .id = "ons_id") |>
     rename_all(tolower) |>
     pivot_longer(
       cols = `2018 - 2019`:`2117 - 2118`,
@@ -32,8 +32,14 @@ read_npp_birth_files <- function(dir) {
       names_prefix = "[0-9]{4} - ",
       values_to = "bths"
     ) |>
-    mutate(age = str_trim(age), area = "England", bths = as.double(bths)) |>
-    mutate(sex = ifelse(sex == "1", "m", "f")) |>
+    mutate(
+      age = as.integer(age),
+      area = "England",
+      bths = as.double(bths),
+      ons_id = str_replace(ons_id, "en_", "npp_")
+    ) |>
+    select(-sex) |>
+    nest(data = c(everything(), -ons_id)) |>
     write_rds(here("data", "npp_2018b_births.rds"))
 }
 
