@@ -172,7 +172,7 @@ fig_all_cnt <- fig_mat_cnt +
 
 fig_all_cnt
 
-ggsave(here("figures", "mat_nb_counts.png"),
+ggsave(here("figures", "nb_mat_counts.png"),
   fig_all_cnt, width = 140, height = 100, units = c("mm"))
 ```
 
@@ -217,7 +217,7 @@ fig_all_rt <- fig_rt_pop +
 
 fig_all_rt
 
-ggsave(here("figures", "mat_nb_rates.png"),
+ggsave(here("figures", "nb_mat_rates.png"),
   fig_all_rt, width = 210, height = 100, units = c("mm"))
 ```
 
@@ -257,7 +257,7 @@ fig_all_mx <- fig_pop_mx +
 
 fig_all_mx
 
-ggsave(here("figures", "mat_nb_multipliers.png"),
+ggsave(here("figures", "nb_mat_multipliers.png"),
   fig_all_mx, width = 210, height = 100, units = c("mm"))
 ```
 
@@ -311,7 +311,7 @@ fig_mx_eff  <- eff |>
 
 fig_mx_eff
 
-ggsave(here("figures", "mat_nb_multipliers_effect.png"),
+ggsave(here("figures", "nb_mat_multipliers_effect.png"),
   fig_mx_eff, width = 210, height = 100, units = c("mm"))
 ```
 
