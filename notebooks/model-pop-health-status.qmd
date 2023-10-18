@@ -105,16 +105,17 @@ ex_dat <- ex_dat |>
   ))
 
 # save out
-ex_dat |> 
+ex_dat |>
   mutate(data = map(
-    data, \(x) x |> 
-      filter(year >= 2018, year <= 2043, age >= 55L) |> 
+    data, \(x) x |>
+      filter(year >= 2018, year <= 2043, age >= 55L) |>
       group_by(sex, age) |>
       mutate(ex_chg = ex - ex[1]) |>
       ungroup()
   )) |> 
-  unnest(data) |> 
-  select(base, type, var, sex, year, age, ex, ex_chg) |> 
+  unnest(data) |>
+  select(base, type, var, sex, year, age, ex, ex_chg) |>
+  rename(le_var = var) |>
   write_rds(here("data", "life_expectancy_change.rds")) |>
   write_csv(here("data", "life_expectancy_change.csv"))
 ```

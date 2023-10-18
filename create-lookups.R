@@ -48,10 +48,10 @@ lookup_proj_var <- tribble(
     TRUE ~ ons_id
   )) |>
   # maps projections to life tables
-  mutate(exp_id = case_when(
-    str_sub(id, 2, 2) == "h" ~ "exp_h",
-    str_sub(id, 2, 2) == "l" ~ "exp_l",
-    TRUE ~ "exp_p"
+  mutate(le_var = case_when(
+    str_sub(id, 2, 2) == "h" ~ "hle",
+    str_sub(id, 2, 2) == "l" ~ "lle",
+    TRUE ~ "ppp"
   ))
 
 # save ----
