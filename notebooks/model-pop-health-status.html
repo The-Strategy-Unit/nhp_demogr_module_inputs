@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.3.321">
+<meta name="generator" content="quarto-1.3.450">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -163,7 +163,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output-display">
 <div id="fig-qoi-pdf" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;1: QOI distribution from the workshop</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;1: QOI distribution from the workshop</figcaption>
 <p><img src="model-pop-health-status_files/figure-html/fig-qoi-pdf-1.png" class="img-fluid figure-img" width="529"></p>
 </figure>
 </div>
@@ -194,7 +194,7 @@ x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)
 <div class="cell-output-display">
 <div id="fig-qoi-pdf-bysex" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;2: QOI workshop distribution by sex</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;2: QOI workshop distribution by sex</figcaption>
 <p><img src="model-pop-health-status_files/figure-html/fig-qoi-pdf-bysex-1.png" class="img-fluid figure-img" width="529"></p>
 </figure>
 </div>
@@ -220,7 +220,7 @@ x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)
 <p>Intuitively, a split normal distribution should give a reasonable approximation of a gamma distribution. If we can find a split normal distribution that closely approximates the workshop gamma distribution then the extrapolation task becomes much more tractable.</p>
 <div id="fig-boe-fan" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;3: Bank of England fan chart</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;3: Bank of England fan chart</figcaption>
 <div class="quarto-figure quarto-figure-left">
 <figure class="figure">
 <p><a href="https://en.wikipedia.org/wiki/Fan_chart_(time_series)"><img src="mpc_cpi_fan_chart_feb_2023.jpg" class="img-fluid figure-img"></a></p>
@@ -236,7 +236,7 @@ x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)
 <p>Given that we wish to fix the skewness (balance of risk) the second parametrisation should be easier to work with. Therefore we need to find the values for mode, uncertainty and skew that define a split normal distribution that best fits (over the entire probability density function) the workshop gamma distribution. The following code uses the R <a href="https://astamm.github.io/nloptr/"><em>nloptr</em></a> package (an R interface to <a href="https://nlopt.readthedocs.io/en/latest/">NLopt</a> an open-source library for non-linear optimization) to find the values of the two control parameters (the mode of the gamma distribution can be obtained directly) that minimize the two-sample <a href="https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test">Kolmogorov–Smirnov</a> test statistic for a random sample from the workshop gamma distribution and the CDF for a split normal.</p>
 <div class="cell">
 <details>
-<summary>Show the code</summary>
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># x argument to stats::ks.test() must be a vector of data values not an actual CDF</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># a large sample required here to approximate the true underlying distribution</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>gam_mod <span class="ot">&lt;-</span> (gam_lim <span class="sc">+</span> ((gam_shp <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> gam_rt))</span>
@@ -318,7 +318,7 @@ x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)
 <div class="cell-output-display">
 <div id="fig-spnorm-dfxs" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;4: Workshop gamma v. split normal comparison</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;4: Workshop gamma v. split normal comparison</figcaption>
 <p><img src="model-pop-health-status_files/figure-html/fig-spnorm-dfxs-1.png" class="img-fluid figure-img" width="755"></p>
 </figure>
 </div>
@@ -327,7 +327,7 @@ x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)
 <div class="cell">
 <div id="fig-rtbl-spnorm-ptiles" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;5: Percentiles workshop gamma v. split normal</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;5: Percentiles workshop gamma v. split normal</figcaption>
 
 <div class="rtbl-spnorm-ptiles">
 <div class="reactable html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-5a844d65d199c6ecde58" style="width:auto;height:auto;"></div>
@@ -347,7 +347,7 @@ x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)
 <div class="cell-output-display">
 <div id="fig-comp-paths" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;6: Linear v. logarithmic paths for central view and uncertainty</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;6: Linear v. logarithmic paths for central view and uncertainty</figcaption>
 <p><img src="model-pop-health-status_files/figure-html/fig-comp-paths-1.png" class="img-fluid figure-img" width="755"></p>
 </figure>
 </div>
@@ -357,7 +357,7 @@ x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)
 <div class="cell-output-display">
 <div id="fig-ridge" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;7: Linear v logarithmic forecast distributions to 2035</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;7: Linear v logarithmic forecast distributions to 2035</figcaption>
 <p><img src="model-pop-health-status_files/figure-html/fig-ridge-1.png" class="img-fluid figure-img" width="755"></p>
 </figure>
 </div>
@@ -367,7 +367,7 @@ x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)
 <div class="cell-output-display">
 <div id="fig-box" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;8: Linear v logarithmic forecast distributions to 2050</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;8: Linear v logarithmic forecast distributions to 2050</figcaption>
 <p><img src="model-pop-health-status_files/figure-html/fig-box-1.png" class="img-fluid figure-img" width="755"></p>
 </figure>
 </div>
@@ -376,7 +376,7 @@ x_{f|m}=\cfrac{QOI_{2018,f|m}}{\left(\cfrac{QOI_{2018,f}+QOI_{2018,m}}{2}\right)
 <div class="cell">
 <div id="fig-rbl-ct-tend" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;9: Central tendency measures linear v. logarithmic</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;9: Central tendency measures linear v. logarithmic</figcaption>
 
 <div class="rtbl-ct-tend">
 <div class="reactable html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-a6ea5d8965584ae573f2" style="width:auto;height:auto;"></div>
@@ -414,7 +414,7 @@ Health\text{ }status\text{ }age_{y,f|m}=\text{ }&amp; chronological\text{ }age\t
 <p>To short cut drawing values from the QOI distribution and pushing each value through <a href="#eq-model-input">Equation&nbsp;2</a> at model run time we follow a similar process described in <a href="#sec-spnorm-approx-gamma">Section&nbsp;5.2.2</a> to estimate the parameters of a split normal distribution that fits a sample of model input values generated by pushing values sampled from the QOI through <a href="#eq-model-input">Equation&nbsp;2</a>. This obviates the need to use <a href="#eq-model-input">Equation&nbsp;2</a> at model run time. Instead we sample model input values directly from a split normal distribution with fixed parameters. When sampling from the QOI distribution the sample size needs to be large enough to provide sufficient accuracy (note: a larger sample will slow the optimization procedure, but as this only needs to be run once this is not a significant issue). The output of this process is a list of completely specified split normal distributions for combinations of year, sex and life table variant that are sampled from to provide model input values at run time. <a href="#fig-rtbl-spnorm-params">Figure&nbsp;10</a> lists the parameters for females using the principal projection life table. Similar parameter sets are produced for combinations of life table variant and sex, in total 6 sets.</p>
 <div class="cell">
 <details>
-<summary>Show the code</summary>
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ex_chg_dat <span class="ot">&lt;-</span> ex_dat <span class="sc">|&gt;</span> </span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">data =</span> <span class="fu">map</span>(</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    data, \(x) x <span class="sc">|&gt;</span> </span>
@@ -622,14 +622,15 @@ Health\text{ }status\text{ }age_{y,f|m}=\text{ }&amp; chronological\text{ }age\t
 <span id="cb2-205"><a href="#cb2-205" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb2-206"><a href="#cb2-206" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-207"><a href="#cb2-207" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(spnorm_params, <span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"split_normal_parameters.rds"</span>))</span>
-<span id="cb2-208"><a href="#cb2-208" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-209"><a href="#cb2-209" aria-hidden="true" tabindex="-1"></a>spnorm_params_fortbl <span class="ot">&lt;-</span> spnorm_params <span class="sc">|&gt;</span> <span class="fu">filter</span>(var <span class="sc">==</span> <span class="st">"ppp"</span>, sex <span class="sc">==</span> <span class="st">"f"</span>) <span class="sc">|&gt;</span> <span class="fu">select</span>(<span class="sc">-</span>var, <span class="sc">-</span>sex, <span class="sc">-</span>ks_test_d)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-208"><a href="#cb2-208" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(spnorm_params, <span class="fu">here</span>(<span class="st">"data"</span>, <span class="st">"split_normal_parameters.csv"</span>))</span>
+<span id="cb2-209"><a href="#cb2-209" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-210"><a href="#cb2-210" aria-hidden="true" tabindex="-1"></a>spnorm_params_fortbl <span class="ot">&lt;-</span> spnorm_params <span class="sc">|&gt;</span> <span class="fu">filter</span>(var <span class="sc">==</span> <span class="st">"ppp"</span>, sex <span class="sc">==</span> <span class="st">"f"</span>) <span class="sc">|&gt;</span> <span class="fu">select</span>(<span class="sc">-</span>var, <span class="sc">-</span>sex, <span class="sc">-</span>ks_test_d)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="cell">
 <div id="fig-rtbl-spnorm-params" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;10: Parameters for split normal distribution used to sample model input values</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;10: Parameters for split normal distribution used to sample model input values</figcaption>
 
 <div class="rtbl-spnorm-params">
 <div class="reactable html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-bcde82eaebbec1d6ab13" style="width:auto;height:auto;"></div>
@@ -650,7 +651,7 @@ Health\text{ }status\text{ }age_{y,f|m}=\text{ }&amp; chronological\text{ }age\t
 <div class="cell-output-display">
 <div id="fig-ex-trends" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;11: Projected trends in period life expectancy by life table variant</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;11: Projected trends in period life expectancy by life table variant</figcaption>
 <p><img src="model-pop-health-status_files/figure-html/fig-ex-trends-1.png" class="img-fluid figure-img" width="755"></p>
 </figure>
 </div>
@@ -660,7 +661,7 @@ Health\text{ }status\text{ }age_{y,f|m}=\text{ }&amp; chronological\text{ }age\t
 <div class="cell-output-display">
 <div id="fig-levar-effect" class="quarto-figure quarto-figure-left anchored">
 <figure class="figure">
-<p></p><figcaption class="figure-caption">Figure&nbsp;12: Effect of life table variants on health status age for persons aged 65 years in 2035</figcaption><p></p>
+<figcaption class="figure-caption">Figure&nbsp;12: Effect of life table variants on health status age for persons aged 65 years in 2035</figcaption>
 <p><img src="model-pop-health-status_files/figure-html/fig-levar-effect-1.png" class="img-fluid figure-img" width="755"></p>
 </figure>
 </div>

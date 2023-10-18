@@ -115,7 +115,8 @@ ex_dat |>
   )) |> 
   unnest(data) |> 
   select(base, type, var, sex, year, age, ex, ex_chg) |> 
-  write_rds(here("data", "life_expectancy_change.rds"))
+  write_rds(here("data", "life_expectancy_change.rds")) |>
+  write_csv(here("data", "life_expectancy_change.csv"))
 ```
 
 ## Background
@@ -913,6 +914,7 @@ spnorm_params <- args_df |>
   )
 
 write_rds(spnorm_params, here("data", "split_normal_parameters.rds"))
+write_csv(spnorm_params, here("data", "split_normal_parameters.csv"))
 
 spnorm_params_fortbl <- spnorm_params |> filter(var == "ppp", sex == "f") |> select(-var, -sex, -ks_test_d)
 ```
