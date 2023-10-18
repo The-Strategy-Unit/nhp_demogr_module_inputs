@@ -85,3 +85,8 @@ The following files are required as inputs to the NHP model.
 * `data/life_expectancy_change.csv`
 * `data/split_normal_parameters.csv`
 * `data/lookup_proj_var.csv`
+
+## Compile HTML
+* install a Markdown parser e.g. [markdown-it](https://www.npmjs.com/package/markdown-it)
+* npm install markdown-it --save
+* from CMD - markdown-it README.md -o README.html
