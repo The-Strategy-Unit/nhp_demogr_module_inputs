@@ -1,5 +1,4 @@
-
-# nhp_demogr_module_inputs
+# NHP Demographic Module
 
 This repo assembles the inputs needed for the demographic module of the NHP model (project 1163).
 
@@ -24,6 +23,12 @@ The following datasets are required as inputs to the demographic module.
 * [2018-based life tables](https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/1981to2068)
 * [2020-based life tables](https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/pastandprojecteddatafromtheperiodandcohortlifetables/2020baseduk1981to2070)
 
+**Life expectancy and disability free life expectancy at age 65 years**  
+* timeseries life expectancy at age 65 years, males and females
+* timeseries disability free life expectancy at age 65 years, males and females
+
+Both these datasets are supplied by Chris White at the Office for National Statistics.
+
 **Local authority district names and codes, and digital vector boundaries**
 * [LAD names and codes](https://geoportal.statistics.gov.uk/search?collection=Dataset&sort=-created&tags=all(NAC_LAD))
 * [LAD boundary files](https://geoportal.statistics.gov.uk/search?collection=Dataset&sort=-created&tags=all(NAC_LAD))
@@ -40,7 +45,7 @@ The following sctripts will read-in the required input datatsets.
 * `create-lookups.R`
 
 ## Modeling activity for the very old
-Sub-national population projections are cut at age 90+. National population projections use 0-104, 105-109 and 110+. In order to model activity by single year of age to age 100, we take the age distribution for ages 90-100+ from NPP and apply to SNPP to create sub-national estimates for ages 0-99 and 100+. We implement a mapping across the two variant sets to ensure the most appropriate NPP distribution is used for each SNPP variant.
+Sub-national population projections are cut at age 90+. National population projections use 0-104, 105-109 and 110+. In order to model activity by single year of age to age 100, we take the age distribution for ages 90-100+ from NPP and apply to SNPP to create sub-national estimates for ages 0-99 and 100+. We implement a mapping between the two variant sets to ensure the most appropriate NPP distribution is used for each SNPP variant.
 
 * `model-syoa-100-snpp-2018b.R`
 
@@ -52,8 +57,13 @@ National population projections include a set of 17 variant projections. Sub-nat
 ## Modeling maternity activity
 If maternity activity is modeled in the same way as other types of activity then future demand will depend on changes in the number of women of child-bearing age (assuming maternity activity is recorded against the mother, as oppose to the child) e.g. maternity activity for 35-year-old women will increase or decrease inline with changes in the number of 35-year-old females in the general population. A better approach is for maternity activity to depend on changes in the number of births by age of the mother e.g. maternity activity for 35-year-old women increases or decreases inline with the number of births expected to 35-year-old mothers. We use data on projections of births by age of mother to implement this approach.
 
+* `notebooks/model-maternity-activity.qmd`
 * `custom-variants-snpp-2018b-births.R`
-* `notebooks/model-maternity-activity.R`
+
+## Modeling changes in population health status
+This [notebook](https://connect.strategyunitwm.nhs.uk/modeling-changes-in-population-health-status/) describes and implements a method for adjusting demand forecasts for future changes in population health status.
+
+* `notebooks/model-pop-health-status.qmd`
 
 ## Weighted trust catchments
 The NHP model requires estimates of population change specific to individual hospital trusts. Local authority district is the lowest geography that Office for National Statistics projections are produced for so catchments are built on LAD. This is different from the inputs app where catchments are built using lower level super output areas (to mirror [Office for Health Improvement & Disparities OHID methodology](https://app.powerbi.com/view?r=eyJrIjoiODZmNGQ0YzItZDAwZi00MzFiLWE4NzAtMzVmNTUwMThmMTVlIiwidCI6ImVlNGUxNDk5LTRhMzUtNGIyZS1hZDQ3LTVmM2NmOWRlODY2NiIsImMiOjh9))
@@ -67,15 +77,11 @@ A trust's final catchment population comprises a weighted sum of its LAD catchme
 * `weighted-trust-catchments.R`
 * see `/figures` folder for maps showing trust catchments
 
-## Modeling changes in population health status
-This [notebook](https://connect.strategyunitwm.nhs.uk/modeling-changes-in-population-health-status/) describes and implements a method for adjusting demand forecasts for future changes in population health status.
-
-* `notebooks/model-pop-health-status.qmd`
-
 ## Outputs
-The following files are passed to the NHP model.
+The following files are required as inputs to the NHP model.
 
 * `data/cohort4_trust_wt_catchment_pops.csv`
-* `data/life_expectancy_chnage.csv`
+* `data/cohort4_trust_wt_catchment_births.csv`
+* `data/life_expectancy_change.csv`
 * `data/split_normal_parameters.csv`
 * `data/lookup_proj_var.csv`
