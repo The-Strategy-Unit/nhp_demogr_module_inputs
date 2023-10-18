@@ -1,0 +1,325 @@
+---
+title: "Modeling Maternity Activity"
+author: "[Paul Seamer](mailto:paulseamer@nhs.net)"
+author-title: ""
+format:
+  html:
+    code-fold: true
+    code-summary: "Show the code"
+    css: "model-pop-health-status.css"
+execute: 
+  echo: false
+  output: false
+knitr:
+  opts_chunk: 
+    dev: "ragg_png"
+fig-cap-location: top
+fig-align: left
+editor: source
+---
+
+```{=html}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Mono&family=Fira+Sans:wght@400;700&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+```
+
+```{r setup}
+# packages
+library("beepr")
+library("dbplyr")
+library("dplyr")
+library("ggplot2")
+library("ggtext")
+library("here")
+library("MetBrewer")
+library("odbc")
+library("patchwork")
+library("purrr")
+library("ragg")
+library("readr")
+library("scales")
+library("stringr")
+library("tidyr")
+
+# functions
+source(here("fx-utilities.R"))
+
+# fonts
+font_hoist("Roboto")
+
+# theme
+source(here("fx-theme-nhp-demogr.R"))
+theme_set(theme_nhp_demogr())
+
+# palette
+pal <- met.brewer("Hiroshige", 12)
+```
+
+```{r inputs}
+births <- read_rds(here("data", "snpp_2018b_births.rds"))
+pop <- read_rds(here("data", "snpp_2018b_syoa_100.rds"))
+
+# England, females child-bearing age (15-44)
+births <- births |>
+  filter(ons_id == "principal_proj") |>
+  unnest(c(data)) |>
+  filter(year %in% c("2019", "2035")) |>
+  group_by(year, age) |>
+  summarise(bths = sum(bths)) |>
+  ungroup()
+
+# England, females child-bearing age (15-44)
+pop <- pop |>
+  select(-id) |>
+  filter(ons_id == "principal_proj") |>
+  unnest(c(data)) |> 
+  filter(
+    !str_detect(area_code, "^E07"),
+    sex == "f",
+    between(age, 15L, 44L),
+    year %in% c("2019", "2035")
+  ) |>
+  group_by(year, age) |>
+  summarise(pop = sum(pop)) |>
+  ungroup()
+```
+
+```{r pull-activity}
+con_hes <- dbConnect(
+  odbc(),
+  Driver = "SQL Server",
+  Server = "MLCSU-BI-SQL",
+  Database = "HESData",
+  Trusted_Connection = "True"
+)
+
+tbip <- tbl(con_hes, in_schema("dbo", "tbInpatients"))
+
+# pull maternity activity from HES
+mat_dat <- tbip |>
+  filter(
+    RESLADST_ONS %LIKE% "E%",
+    FYEAR == "201819",
+    SPELEND == "Y",
+    TRETSPEF %in% c("501", "560") | ADMIMETH %LIKE% "3%"
+    ) |>
+  count(RESLADST_ONS, SEX, STARTAGE) |>
+  collect()
+
+beepr::beep(9)
+dbDisconnect(con_hes)
+
+# England, females, child-bearing age (15-44)
+mat_dat <- mat_dat |>
+  rename_with(tolower) |>
+  rename(age = startage) |>
+  filter(
+    sex == "2",
+    between(age, 15L, 44L)
+  ) |> 
+  group_by(age) |>
+  summarise(n = sum(n)) |>
+  ungroup()
+```
+
+If maternity activity is modeled in the same way as other types of activity then future demand will depend on changes in the number of women of child-bearing age (assuming maternity activity is recorded against the mother, as oppose to the child) e.g. maternity activity for 35-year-old women will increase or decrease inline with changes in the number of 35-year-old females in the general population. A better approach is for maternity activity to depend on changes in the number of births by age of the mother e.g. maternity activity for 35-year-old women increases or decreases inline with the number of births expected to 35-year-old mothers.
+
+This notebook describes the relevant data and provides a basic estimate of the effect of updating our approach.
+
+@fig-counts shows inpatient maternity spells by age in 2018-19 alongside projected change in births by age of mother, and women of child-bearing age.
+
+```{r fig-counts, fig.width=280/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-counts
+#| fig-cap: "Counts: inpatient maternity spells; births by age of mother; women of child-bearing age"
+
+# activity count by age
+fig_mat_cnt <- mat_dat |>
+  ggplot(aes(x = age, y = n, group = 1L)) +
+  geom_point(shape = 19, color = pal[1]) +
+  scale_x_continuous(name = NULL, limits = c(15, 45), breaks = seq(15, 45, 5)) +
+  scale_y_continuous(name = NULL, labels = comma) +
+  labs(subtitle = "Inptatient maternity spells: <span style = 'color: #e76254;'>2018-19</span>") +
+  theme(plot.subtitle = element_markdown())
+
+# women count by age
+fig_pop_cnt <- pop |>
+  ggplot(aes(x = age, y = pop, group = year, color = year)) +
+  geom_point(shape = 19, show.legend = FALSE) +
+  geom_line(show.legend = FALSE) +
+  scale_color_manual(values = pal[c(1, 11)]) +
+  scale_x_continuous(name = NULL, limits = c(15, 45), breaks = seq(15, 45, 5)) +
+  scale_y_continuous(name = NULL, labels = comma) +
+  labs(subtitle = "Women child-bearing age: <span style = 'color: #e76254;'>2019</span>, <span style = 'color: #32608D;'>2035</span>") +
+  theme(plot.subtitle = element_markdown())
+
+# births count by age of mother
+fig_bths_cnt <- births |> 
+  ggplot(aes(x = age, y = bths, group = year, color = year)) +
+  geom_point(shape = 19, show.legend = FALSE) +
+  geom_line(show.legend = FALSE) +
+  scale_color_manual(values = pal[c(1, 11)]) +
+  scale_x_continuous(name = NULL, limits = c(15, 45), breaks = seq(15, 45, 5)) +
+  scale_y_continuous(name = NULL, labels = comma) +
+  labs(subtitle = "Births by age of mother: <span style = 'color: #e76254;'>2019</span>, <span style = 'color: #32608D;'>2035</span>") +
+  theme(plot.subtitle = element_markdown())
+
+fig_all_cnt <- fig_mat_cnt +
+  fig_bths_cnt +
+  fig_pop_cnt +
+  plot_layout(nrow = 1)
+
+fig_all_cnt
+
+ggsave(here("figures", "mat_nb_counts.png"),
+  fig_all_cnt, width = 140, height = 100, units = c("mm"))
+```
+
+@fig-rates compares rates of inpatient maternity spells calculated using the population of women of child-bearing age as the denominator with rates based on births by age of mother.
+
+```{r fig-rates, fig.width=210/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-rates
+#| fig-cap: "Inpatient maternity spells, rates 2018-19"
+
+# activity rate /pop by age
+fig_rt_pop <- mat_dat |>
+  left_join(
+    pop |>
+    filter(year == "2019"),
+  join_by("age")
+  ) |> 
+  mutate(rt = n / pop * 1000) |>
+  ggplot(aes(x = age, y = rt, group = 1L)) +
+  geom_point(shape = 19, color = pal[1]) +
+  scale_x_continuous(name = NULL, limits = c(15, 45), breaks = seq(15, 45, 5)) +
+  scale_y_continuous(name = NULL, labels = comma) +
+  labs(subtitle = "~ rate per 1000 women child-bearing age")
+
+# activity rate /births by age
+fig_rt_bths <- mat_dat |>
+  left_join(
+    births |>
+    filter(year == "2019"),
+  join_by("age")
+  ) |>
+  mutate(rt = n / bths * 1000) |>
+  ggplot(aes(x = age, y = rt, group = 1L)) +
+  geom_point(shape = 19, color = pal[1]) +
+  scale_x_continuous(name = NULL, limits = c(15, 45), breaks = seq(15, 45, 5)) +
+  scale_y_continuous(name = NULL, labels = comma) +
+  labs(subtitle = "~ rate per 1000 births by age of mother")
+
+fig_all_rt <- fig_rt_pop +
+  fig_rt_bths +
+  plot_layout(nrow = 1)
+
+fig_all_rt
+
+ggsave(here("figures", "mat_nb_rates.png"),
+  fig_all_rt, width = 210, height = 100, units = c("mm"))
+```
+
+@fig-mx shows how the demographic multipliers for maternity activity differ between (a) the default approach based on changes in the number of women of child-bearing age, and (b) the *new* approach based on changes in the number of births by age of mother.
+
+```{r fig-mx, fig.width=210/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-mx
+#| fig-cap: "Maternity activity multipliers 2035 v 2019"
+pop_mx <- pop |> 
+  pivot_wider(names_from = "year", values_from = "pop", names_prefix = "yr_") |>
+  mutate(mx = yr_2035 / yr_2019)
+
+fig_pop_mx <- pop_mx |>
+  ggplot(aes(x = age, y = mx, group = 1)) +
+  geom_point(shape = 19, color = pal[1]) +
+  geom_hline(aes(yintercept = 1), linewidth = .5, color = "#2c2825") +
+  scale_x_continuous(name = NULL, limits = c(15, 45), breaks = seq(15, 45, 5)) +
+  scale_y_continuous(name = NULL, labels = comma) +
+  labs(subtitle = "~ women of child-bearing age")
+
+births_mx <- births |> 
+  pivot_wider(names_from = "year", values_from = "bths", names_prefix = "yr_") |>
+  mutate(mx = yr_2035 / yr_2019)
+
+fig_bths_mx <- births_mx |>
+  ggplot(aes(x = age, y = mx, group = 1)) +
+  geom_point(shape = 19, color = pal[1]) +
+  geom_hline(aes(yintercept = 1), linewidth = .5, color = "#2c2825") +
+  scale_x_continuous(name = NULL, limits = c(15, 45), breaks = seq(15, 45, 5)) +
+  scale_y_continuous(name = NULL, labels = comma) +
+  labs(subtitle = "~ births by age of mother")
+
+fig_all_mx <- fig_pop_mx +
+  fig_bths_mx +
+  plot_layout(nrow = 1)
+
+fig_all_mx
+
+ggsave(here("figures", "mat_nb_multipliers.png"),
+  fig_all_mx, width = 210, height = 100, units = c("mm"))
+```
+
+```{r fig-mx-eff, fig.width=140/25.4, fig.height=100/25.4}
+#| output: true
+#| label: fig-mx-eff
+#| fig-cap: "Modeled inpatient maternity spells in 2035, old approach v. new approach"
+eff <- mat_dat |>
+  left_join(births_mx |>
+    select(age, mx) |>
+    rename(mxb = mx),
+  join_by("age")) |>
+  left_join(pop_mx |>
+    select(age, mx) |>
+    rename(mxp = mx),
+  join_by("age")) |>
+  mutate(
+    mxb_n = mxb * n,
+    mxp_n = mxp * n
+  )
+
+eff_no  <- eff |>
+  summarise(
+    n = sum(n),
+    mxb_n = sum(mxb_n),
+    mxp_n = sum(mxp_n)
+  )
+
+eff_pct <- eff_no |>
+  mutate(
+    mxb_pct = (mxb_n / n) - 1,
+    mxp_pct = (mxp_n / n) - 1
+  )
+
+# number formatter
+format_no <- function(x) {label_number(accuracy = .001, scale_cut = cut_long_scale())(x)}
+# percent formatter
+format_pct <- function(x) {percent(x, accuracy = .01)}
+
+fig_mx_eff  <- eff |>
+  select(age, mxb_n, mxp_n) |>
+  pivot_longer(cols = c(mxb_n, mxp_n), names_to = "method", values_to = "n") |>
+  ggplot(aes(x = age, y = n, group = method, color = method)) +
+  geom_point(shape = 19, show.legend = FALSE) +
+  geom_line(show.legend = FALSE) +
+  scale_color_manual(values = pal[c(1, 11)]) +
+  scale_x_continuous(name = NULL, limits = c(15, 45), breaks = seq(15, 45, 5)) +
+  scale_y_continuous(name = NULL, labels = comma) +
+  labs(subtitle = "<span style = 'color: #32608D;'>~ women of child-bearing age</span>, <span style = 'color: #e76254;'>~ births by age of mother</span>, ") +
+  theme(plot.subtitle = element_markdown())
+
+fig_mx_eff
+
+ggsave(here("figures", "mat_nb_multipliers_effect.png"),
+  fig_mx_eff, width = 210, height = 100, units = c("mm"))
+```
+
+@fig-mx-eff shows the effect of adopting the new approach on the modeled number of inpatient maternity spells in 2035. The direction of effect is to raise the modeled number of spells for all ages over 20 years.
+
+Switching to a demographic multiplier based on births by age of mother rather than the number of women of child-bearing age leads to a higher estimate of future inpatient maternity activity, `r format_no(eff_no$mxb_n)` spells compared with `r format_no(eff_no$mxp_n)` spells. The modeled change in spells between 2035 and 2019 is a `r format_pct(eff_pct$mxb_pct)` increase compared with a `r format_pct(eff_pct$mxp_pct)` fall.
+
+## Discuss with Tom
+* definition of maternity activity (associated with mother or child)
+* ages 15 to 44 only
+* outpatients
