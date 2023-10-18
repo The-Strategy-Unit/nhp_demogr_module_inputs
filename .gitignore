@@ -37,3 +37,6 @@ figures/*.html
 
 # published to posit connect
 notebooks/rsconnect
+
+# Node.js modules
+node_modules/
