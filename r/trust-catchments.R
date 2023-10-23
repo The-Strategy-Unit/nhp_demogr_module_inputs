@@ -57,7 +57,12 @@ chrt4_trusts_all <- c(
   "RTX",
   "RH5",
   "RBA",
-  "RAS"
+  "RAS",
+  "RCX", # The Queen Elizabeth Hospital, King's Lynn, NHS Foundation Trust
+  "RGN", # North West Anglia NHS Foundation Trust
+  "RBT", # Mid Cheshire Hospitals NHS Foundation Trust
+  "RCF", # Airedale NHS Foundation Trust
+  "RDU" # Frimley Health NHS Foundation Trust
 )
 
 chrt4_trusts <- c(
