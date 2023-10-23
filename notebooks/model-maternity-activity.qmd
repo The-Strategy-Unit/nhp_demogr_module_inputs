@@ -43,13 +43,13 @@ library("stringr")
 library("tidyr")
 
 # functions
-source(here("fx-utilities.R"))
+source(here("r", "fx-utilities.R"))
 
 # fonts
 font_hoist("Roboto")
 
 # theme
-source(here("fx-theme-nhp-demogr.R"))
+source(here("r", "fx-theme-nhp-demogr.R"))
 theme_set(theme_nhp_demogr())
 
 # palette
@@ -64,7 +64,10 @@ pop <- read_rds(here("data", "snpp_2018b_syoa_100.rds"))
 births <- births |>
   filter(ons_id == "principal_proj") |>
   unnest(c(data)) |>
-  filter(year %in% c("2019", "2035")) |>
+  filter(
+    !str_detect(area_code, "^E07"),
+    year %in% c("2019", "2035")
+  ) |>
   group_by(year, age) |>
   summarise(bths = sum(bths)) |>
   ungroup()
