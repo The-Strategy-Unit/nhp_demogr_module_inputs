@@ -97,17 +97,16 @@ con_hes <- dbConnect(
   Trusted_Connection = "True"
 )
 
-tbip <- tbl(con_hes, in_schema("dbo", "tbInpatients"))
+tbip <- tbl(con_hes, in_schema("nhp_modelling", "inpatients"))
 
 # pull maternity activity from HES
 mat_dat <- tbip |>
   filter(
     RESLADST_ONS %LIKE% "E%",
     FYEAR == "201819",
-    SPELEND == "Y",
     TRETSPEF %in% c("501", "560") | ADMIMETH %LIKE% "3%"
     ) |>
-  count(RESLADST_ONS, SEX, STARTAGE) |>
+  count(RESLADST_ONS, SEX, AGE) |>
   collect()
 
 beepr::beep(9)
@@ -116,7 +115,6 @@ dbDisconnect(con_hes)
 # England, females, child-bearing age (15-44)
 mat_dat <- mat_dat |>
   rename_with(tolower) |>
-  rename(age = startage) |>
   filter(
     sex == "2",
     between(age, 15L, 44L)
