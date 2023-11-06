@@ -15,11 +15,13 @@ snpp_2018b <- read_rds(here("data", "snpp_2018b_syoa_100.rds"))
 snpp_2018b_cv <- read_rds(here("data", "snpp_2018b_custom_vars.rds"))
 snpp_2018b_bths <- read_rds(here("data", "snpp_2018b_births.rds"))
 snpp_2018b_cv_bths <- read_rds(here("data", "snpp_2018b_custom_vars_births.rds")) # nolint: line_length_linter.
-catchments <- read_rds(here("data", "cohort4_trust_catchments_201819.rds"))
+catchments <- read_rds(here("data", "trust_catchments_201819.rds"))
 
-chrt4 <- read_rds(here("data", "cohort4_trust_codes.rds"))
-chrt4_trusts_all <- chrt4[["chrt4_trusts_all"]]
-chrt4_trusts <- chrt4[["chrt4_trusts"]]
+all_trusts <- read_json(
+  here("data", "providers.json"),
+  simplifyVector = TRUE
+) |>
+str_subset("\\|", TRUE)
 
 # weighted pop fn ----
 w_pop <- function(trust, dat, var_nm) {
@@ -56,11 +58,11 @@ w_pop <- function(trust, dat, var_nm) {
 
 # populations ----
 # standard snpp variants (x4)
-ls_trusts_std_vars <- chrt4_trusts |>
+ls_trusts_std_vars <- all_trusts |>
   map(\(x) w_pop(trust = x, dat = snpp_2018b, var_nm = pop))
 
 # custom snpp variants (x17)
-ls_trusts_cus_vars <- chrt4_trusts |>
+ls_trusts_cus_vars <- all_trusts |>
   map(\(x) w_pop(trust = x, dat = snpp_2018b_cv, var_nm = pop))
 
 # remove custom variants that are duplicated in standard variants
@@ -73,17 +75,17 @@ ls_trusts_cus_vars <- map(
 
 # compile single list with x4 standard variants + 15 non-duplicate custom
 # variants. 4 standard variants + 15 custom variants + principal = 20
-chrt4_wt_catchments <- map2(
+all_trusts_wt_catchments <- map2(
   ls_trusts_std_vars, ls_trusts_cus_vars, \(x, y) bind_rows(x, y)
 )
 
 # births ----
 # standard snpp variants (x4)
-ls_trusts_std_vars_bths <- chrt4_trusts |>
+ls_trusts_std_vars_bths <- all_trusts |>
   map(\(x) w_pop(trust = x, dat = snpp_2018b_bths, var_nm = bths))
 
 # custom snpp variants (x17)
-ls_trusts_cus_vars_bths <- chrt4_trusts |>
+ls_trusts_cus_vars_bths <- all_trusts |>
   map(\(x) w_pop(trust = x, dat = snpp_2018b_cv_bths, var_nm = bths))
 
 # remove custom variants that are duplicated in standard variants
@@ -96,31 +98,31 @@ ls_trusts_cus_vars_bths <- map(
 
 # compile single list with x4 standard variants + 15 non-duplicate custom
 # variants. 4 standard variants + 15 custom variants + principal = 20
-chrt4_wt_catchments_bths <- map2(
+all_trusts_wt_catchments_bths <- map2(
   ls_trusts_std_vars_bths, ls_trusts_cus_vars_bths, \(x, y) bind_rows(x, y)
 )
 
 # save ----
 # populations
 write_rds(
-  chrt4_wt_catchments,
-  here("data", "cohort4_trust_wt_catchment_pops.rds")
+  all_trusts_wt_catchments,
+  here("data", "trust_wt_catchment_pops.rds")
 )
 
 write_csv(
-  bind_rows(chrt4_wt_catchments) |>
+  bind_rows(all_trusts_wt_catchments) |>
     unnest(data),
-  here("data", "cohort4_trust_wt_catchment_pops.csv")
+  here("data", "trust_wt_catchment_pops.csv")
 )
 
 # births
 write_rds(
-  chrt4_wt_catchments_bths,
-  here("data", "cohort4_trust_wt_catchment_births.rds")
+  all_trusts_wt_catchments_bths,
+  here("data", "trust_wt_catchment_births.rds")
 )
 
 write_csv(
-  bind_rows(chrt4_wt_catchments_bths) |>
+  bind_rows(all_trusts_wt_catchments_bths) |>
     unnest(data),
-  here("data", "cohort4_trust_wt_catchment_births.csv")
+  here("data", "trust_wt_catchment_births.csv")
 )

@@ -18,6 +18,7 @@ library("dbplyr")
 library("dplyr")
 library("here")
 library("odbc")
+library("jsonlite")
 library("leaflet")
 library("mapview")
 library("purrr")
@@ -36,46 +37,20 @@ con_hes <- dbConnect(
   Trusted_Connection = "True"
 )
 
-tbip <- tbl(con_hes, in_schema("dbo", "tbInpatients"))
+tbip <- tbl(con_hes, in_schema("nhp_modelling", "inpatients"))
 
-# cohort 4 trusts ----
-# "RXN_RTX" joint build
-# "RH5_RBA" joint build
-chrt4_trusts_all <- c(
-  "RXC",
-  "RN5",
-  "RYJ",
-  "RGP",
-  "RNQ",
-  "RD8",
-  "RBZ",
-  "RX1",
-  "RHW",
-  "RA9",
-  "RGR",
-  "RXN",
-  "RTX",
-  "RH5",
-  "RBA",
-  "RAS",
-  "RCX", # The Queen Elizabeth Hospital, King's Lynn, NHS Foundation Trust
-  "RGN", # North West Anglia NHS Foundation Trust
-  "RBT", # Mid Cheshire Hospitals NHS Foundation Trust
-  "RCF", # Airedale NHS Foundation Trust
-  "RDU" # Frimley Health NHS Foundation Trust
-)
-
-chrt4_trusts <- c(
-  chrt4_trusts_all[!chrt4_trusts_all %in% c("RXN", "RTX", "RH5", "RBA")],
-  "RXN_RTX", "RH5_RBA"
-)
+# all trusts ----
+all_trusts <- read_json(
+  here("data", "providers.json"),
+  simplifyVector = TRUE
+) |>
+str_subset("\\|", TRUE)
 
 # read activity ----
 ip_activity <- tbip |>
   filter(
     FYEAR == "201819",
-    SPELEND == "Y",
-    PROCODE3 %in% chrt4_trusts_all
+    PROCODE3 %in% all_trusts
   ) |>
   count(FYEAR, PROCODE3, RESLADST_ONS, LSOA11, SEX) |>
   collect()
@@ -87,13 +62,9 @@ dbDisconnect(con_hes)
 ip_activity <- ip_activity |>
   ungroup() |>
   rename_with(tolower, everything()) |>
+  rename(procode = procode3) |>
   select(-fyear) |>
   filter(str_detect(lsoa11, "^E"), !is.na(lsoa11)) |>
-  mutate(procode = case_when(
-    procode3 %in% c("RXN", "RTX") ~ "RXN_RTX",
-    procode3 %in% c("RH5", "RBA") ~ "RH5_RBA",
-    TRUE ~ procode3
-  )) |>
   group_by(procode, resladst_ons) |>
   summarise(n = sum(n)) |>
   mutate(p = n / sum(n)) |>
@@ -199,7 +170,7 @@ catch_map <- function(trust) {
     )
 }
 
-catch_maps_ls <- map(chrt4_trusts, catch_map)
+catch_maps_ls <- map(all_trusts, catch_map)
 
 # bug - mapshot fails to save leaflet map as PNG file (no problem creating
 # HTML file)
@@ -217,12 +188,7 @@ print_maps <- function(trust, map) {
   webshot2::webshot(url = here("figures", html_nm), file = here("figures", png_nm))
 }
 
-map2(chrt4_trusts, catch_maps_ls, print_maps)
+map2(all_trusts, catch_maps_ls, print_maps)
 
 # save ----
-write_rds(
-  list(chrt4_trusts_all = chrt4_trusts, chrt4_trusts = chrt4_trusts),
-  here("data", "cohort4_trust_codes.rds")
-)
-
-write_rds(catchments, here("data", "cohort4_trust_catchments_201819.rds"))
+write_rds(catchments, here("data", "trust_catchments_201819.rds"))
